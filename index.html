@@ -969,6 +969,7 @@
     makeDayItemDraggable(sec.querySelector(".spot-card"));
     makeDayItemDraggable(sec.querySelector(".day-note-card"));
     attachAddSpotButtons(sec);
+    enhanceSpotCardsForCopy(sec);
     setupDayItemDropZones();
     updateDayNumbersAndDates();
     scheduleSave();
@@ -1021,7 +1022,11 @@
         dayCard.insertBefore(newCard, addRow);
 
         makeDayItemDraggable(newCard);
+        enhanceSpotCardsForCopy(dayCard);
         setupDayItemDropZones();
+        newCard.querySelectorAll("[contenteditable]").forEach(el => {
+          el.addEventListener("input", scheduleSave);
+        });
         scheduleSave();
       };
     });
@@ -1063,7 +1068,7 @@
     reader.readAsText(file, "utf-8");
   }
 
-  // ========= 行程卡片裡的按鈕功能 =========
+  // ========= 圖片：input & 點擊刪除 =========
   function ensurePhotoInput() {
     if (photoInput) return;
     photoInput = document.createElement("input");
@@ -1090,11 +1095,10 @@
         img.style.marginTop = "4px";
         currentPhotoTarget.appendChild(img);
 
+        // 點一下直接刪除（不再跳出確認）
         img.addEventListener("click", () => {
-          if (confirm("要刪除這張照片嗎？")) {
-            img.remove();
-            scheduleSave();
-          }
+          img.remove();
+          scheduleSave();
         });
 
         scheduleSave();
@@ -1104,6 +1108,24 @@
     });
   }
 
+  // ========= 行程卡片加上「複製此卡片」按鈕 =========
+  function enhanceSpotCardsForCopy(root) {
+    const container = root || document;
+    const cards = container.querySelectorAll(".spot-card");
+    cards.forEach(card => {
+      const row = card.querySelector(".btn-row-spot");
+      if (!row) return;
+      if (row.querySelector(".copy-spot-btn")) return;
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn small copy-spot-btn";
+      btn.textContent = "複製此卡片";
+      row.appendChild(btn);
+    });
+  }
+
+  // ========= 行程卡片裡的按鈕功能 =========
   function setupButtonActions() {
     if (buttonsBound) return;
     buttonsBound = true;
@@ -1114,9 +1136,8 @@
 
       const text = btn.textContent.trim();
 
-      // 匯出／匯入／新增天數／刪除天數按鈕已各自綁好，這裡處理卡片內的
+      // 當日備註／花費 的圖片按鈕
       if (btn.classList.contains("day-note-photo-btn")) {
-        // 當日備註／花費的新增圖片
         ensurePhotoInput();
         const dayCard = btn.closest(".day-card");
         if (!dayCard) return;
@@ -1128,16 +1149,41 @@
         return;
       }
 
-      // 行程卡片上的小按鈕
+      // 行程卡片上的按鈕
       if (btn.closest(".btn-row-spot")) {
         const card = btn.closest(".spot-card");
         if (!card) return;
 
+        // 先處理「複製此卡片」
+        if (btn.classList.contains("copy-spot-btn") || text.includes("複製此卡片")) {
+          saveSnapshot();
+          const clone = card.cloneNode(true);
+          card.after(clone);
+
+          makeDayItemDraggable(clone);
+          enhanceSpotCardsForCopy(card.closest(".day-card") || document);
+
+          // 讓複製出來的 contenteditable 也會自動存檔
+          clone.querySelectorAll("[contenteditable]").forEach(el => {
+            el.addEventListener("input", scheduleSave);
+          });
+
+          scheduleSave();
+          return;
+        }
+
         const jpEl = card.querySelector(".spot-name-ja");
         const zhEl = card.querySelector(".spot-title");
         const dest = (jpEl && jpEl.textContent.trim()) ||
-                     (zhEl && zhEl.textContent.trim()) ||
-                     "";
+                     (zhEl && zhEl.textContent.trim()) || "";
+
+        if (text.includes("📷") || text.includes("新增圖片")) {
+          ensurePhotoInput();
+          const note = card.querySelector(".spot-note") || card;
+          currentPhotoTarget = note;
+          photoInput.click();
+          return;
+        }
 
         if (!dest) {
           alert("請先在行程卡片裡填寫地點名稱（尤其是日文名稱或地址）");
@@ -1159,14 +1205,6 @@
           window.open(url, "_blank");
           return;
         }
-
-        if (text.includes("📷") || text.includes("新增圖片")) {
-          ensurePhotoInput();
-          const note = card.querySelector(".spot-note") || card;
-          currentPhotoTarget = note;
-          photoInput.click();
-          return;
-        }
       }
     });
   }
@@ -1186,6 +1224,7 @@
     setupDayItemDropZones();
 
     attachAddSpotButtons(document);
+    enhanceSpotCardsForCopy(document);
     setupButtonActions();
 
     const addDayBtn = document.getElementById("addDayBtn");
@@ -1243,7 +1282,7 @@
     attachAllHandlers();
   });
 })();
-        </script>
+          </script>
 
 </body>
 </html>
