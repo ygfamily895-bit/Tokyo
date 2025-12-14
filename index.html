@@ -635,19 +635,24 @@
 <script>
 (function () {
   const MAX_UNDO = 10;
-  const LOCAL_KEY = "niji-trip-2026-html-v2";
+  const LOCAL_KEY = "niji-trip-2026-html-v3";
+  const HOTEL_NAME = "ベッセルイン上野入谷駅前";
+
   let undoStack = [];
   let saveTimer = null;
+  let draggingChip = null;
+  let draggingItem = null;
+  let buttonsBound = false;
+  let photoInput = null;
+  let currentPhotoTarget = null;
 
   // ========= 共用：儲存／復原 =========
   function saveSnapshot() {
     const root = document.getElementById("pageRoot");
     if (!root) return;
     const html = root.innerHTML;
-    // 存到 Undo 堆疊
     undoStack.push(html);
     if (undoStack.length > MAX_UNDO) undoStack.shift();
-    // 存到 localStorage（讓重整後還在）
     try {
       localStorage.setItem(LOCAL_KEY, html);
     } catch (e) {
@@ -670,7 +675,7 @@
     } catch (e) {
       console.warn("localStorage 儲存失敗：", e);
     }
-    attachAllHandlers(); // 重新綁所有事件
+    attachAllHandlers();
   }
 
   function undo() {
@@ -679,7 +684,7 @@
     restoreSnapshot(last);
   }
 
-  // ========= 日期計算相關 =========
+  // ========= 日期計算 =========
   function parseMonthDay(text) {
     const m = text.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
     if (!m) return null;
@@ -749,9 +754,7 @@
     });
   }
 
-  // ========= 上方日期 chip：按一下捲動、拖拉重排 =========
-  let draggingChip = null;
-
+  // ========= 上方日期 chip：點擊＋拖拉 =========
   function attachDayChipHandlers(chip) {
     chip.draggable = true;
 
@@ -823,10 +826,9 @@
     });
   }
 
-  // ========= 一天裡的各個欄位（行程卡片＋當日備註卡片）拖拉 =========
-  let draggingItem = null;
-
+  // ========= 一天裡的欄位拖拉 =========
   function makeDayItemDraggable(el) {
+    if (!el) return;
     el.draggable = true;
     el.classList.add("day-item");
 
@@ -890,7 +892,7 @@
     const newId = "day-" + Date.now();
     const newIndex = chips.length + 1;
 
-    let baseDate = new Date(2026, 4, 8); // fallback 5/8
+    let baseDate = new Date(2026, 4, 8);
     if (chips.length > 0) {
       const lastChipSub = chips[chips.length - 1].querySelector(".day-chip-sub");
       if (lastChipSub) {
@@ -974,7 +976,7 @@
 
   function removeLastDay() {
     const sections = Array.from(document.querySelectorAll(".day-section"));
-    if (sections.length <= 1) return; // 至少留一天
+    if (sections.length <= 1) return;
     saveSnapshot();
 
     const lastSection = sections[sections.length - 1];
@@ -1052,13 +1054,121 @@
         const data = JSON.parse(e.target.result);
         if (data && data.html) {
           saveSnapshot();
-          restoreSnapshot(data.html);   // restoreSnapshot 會順便存到 localStorage
+          restoreSnapshot(data.html);
         }
       } catch (err) {
         alert("匯入失敗，檔案格式不正確。");
       }
     };
     reader.readAsText(file, "utf-8");
+  }
+
+  // ========= 行程卡片裡的按鈕功能 =========
+  function ensurePhotoInput() {
+    if (photoInput) return;
+    photoInput = document.createElement("input");
+    photoInput.type = "file";
+    photoInput.accept = "image/*";
+    photoInput.style.display = "none";
+    document.body.appendChild(photoInput);
+
+    photoInput.addEventListener("change", () => {
+      const file = photoInput.files && photoInput.files[0];
+      if (!file || !currentPhotoTarget) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const url = e.target.result;
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "行程照片";
+        img.style.width = "70px";
+        img.style.height = "70px";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "10px";
+        img.style.marginRight = "4px";
+        img.style.marginTop = "4px";
+        currentPhotoTarget.appendChild(img);
+
+        img.addEventListener("click", () => {
+          if (confirm("要刪除這張照片嗎？")) {
+            img.remove();
+            scheduleSave();
+          }
+        });
+
+        scheduleSave();
+      };
+      reader.readAsDataURL(file);
+      photoInput.value = "";
+    });
+  }
+
+  function setupButtonActions() {
+    if (buttonsBound) return;
+    buttonsBound = true;
+
+    document.addEventListener("click", e => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+
+      const text = btn.textContent.trim();
+
+      // 匯出／匯入／新增天數／刪除天數按鈕已各自綁好，這裡處理卡片內的
+      if (btn.classList.contains("day-note-photo-btn")) {
+        // 當日備註／花費的新增圖片
+        ensurePhotoInput();
+        const dayCard = btn.closest(".day-card");
+        if (!dayCard) return;
+        const container = dayCard.querySelector(".day-note-photos") ||
+                          dayCard.querySelector(".day-note-box") ||
+                          dayCard;
+        currentPhotoTarget = container;
+        photoInput.click();
+        return;
+      }
+
+      // 行程卡片上的小按鈕
+      if (btn.closest(".btn-row-spot")) {
+        const card = btn.closest(".spot-card");
+        if (!card) return;
+
+        const jpEl = card.querySelector(".spot-name-ja");
+        const zhEl = card.querySelector(".spot-title");
+        const dest = (jpEl && jpEl.textContent.trim()) ||
+                     (zhEl && zhEl.textContent.trim()) ||
+                     "";
+
+        if (!dest) {
+          alert("請先在行程卡片裡填寫地點名稱（尤其是日文名稱或地址）");
+          return;
+        }
+
+        if (text.includes("地圖預覽") || text.includes("在地圖上搜尋")) {
+          const url = "https://www.google.com/maps/search/?api=1&query=" +
+                      encodeURIComponent(dest);
+          window.open(url, "_blank");
+          return;
+        }
+
+        if (text.includes("從飯店導航")) {
+          const url =
+            "https://www.google.com/maps/dir/?api=1" +
+            "&origin=" + encodeURIComponent(HOTEL_NAME) +
+            "&destination=" + encodeURIComponent(dest);
+          window.open(url, "_blank");
+          return;
+        }
+
+        if (text.includes("📷") || text.includes("新增圖片")) {
+          ensurePhotoInput();
+          const note = card.querySelector(".spot-note") || card;
+          currentPhotoTarget = note;
+          photoInput.click();
+          return;
+        }
+      }
+    });
   }
 
   // ========= 綁定所有事件 =========
@@ -1076,6 +1186,7 @@
     setupDayItemDropZones();
 
     attachAddSpotButtons(document);
+    setupButtonActions();
 
     const addDayBtn = document.getElementById("addDayBtn");
     if (addDayBtn) addDayBtn.onclick = addDay;
@@ -1119,7 +1230,6 @@
     const root = document.getElementById("pageRoot");
     if (!root) return;
 
-    // 先從 localStorage 還原
     try {
       const saved = localStorage.getItem(LOCAL_KEY);
       if (saved) {
@@ -1129,11 +1239,11 @@
       console.warn("讀取 localStorage 失敗：", e);
     }
 
-    saveSnapshot();      // 初始狀態先丟進 undo
-    attachAllHandlers(); // 綁定事件
+    saveSnapshot();
+    attachAllHandlers();
   });
 })();
-      </script>
+        </script>
 
 </body>
 </html>
