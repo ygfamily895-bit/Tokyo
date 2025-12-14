@@ -635,615 +635,253 @@
 <script>
 (function () {
   const MAX_UNDO = 10;
-  const LOCAL_KEY = "niji-trip-2026-html-v3";
+  const LOCAL_KEY = "niji-trip-2026-html-v4";
   const HOTEL_NAME = "ベッセルイン上野入谷駅前";
+  const LONGPRESS_TIME = 800; // 長按 0.8 秒觸發
 
   let undoStack = [];
   let saveTimer = null;
   let draggingChip = null;
   let draggingItem = null;
-  let buttonsBound = false;
-  let photoInput = null;
-  let currentPhotoTarget = null;
+  let longPressTimer = null;
+  let currentMenu = null;
+  let isDragMode = false;
+  let autoScrollInterval = null;
 
-  // ========= 共用：儲存／復原 =========
+  // ========== 儲存/復原 ==========
   function saveSnapshot() {
     const root = document.getElementById("pageRoot");
     if (!root) return;
     const html = root.innerHTML;
     undoStack.push(html);
     if (undoStack.length > MAX_UNDO) undoStack.shift();
-    try {
-      localStorage.setItem(LOCAL_KEY, html);
-    } catch (e) {
-      console.warn("localStorage 儲存失敗：", e);
-    }
-    console.log("snapshot saved, length =", undoStack.length);
+    localStorage.setItem(LOCAL_KEY, html);
   }
-
   function scheduleSave() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveSnapshot, 800);
   }
-
   function restoreSnapshot(html) {
     const root = document.getElementById("pageRoot");
     if (!root) return;
     root.innerHTML = html;
-    try {
-      localStorage.setItem(LOCAL_KEY, html);
-    } catch (e) {
-      console.warn("localStorage 儲存失敗：", e);
-    }
+    localStorage.setItem(LOCAL_KEY, html);
     attachAllHandlers();
   }
-
   function undo() {
     if (undoStack.length === 0) return;
     const last = undoStack.pop();
     restoreSnapshot(last);
   }
 
-  // ========= 日期計算 =========
+  // ========== 日期處理 ==========
   function parseMonthDay(text) {
     const m = text.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
     if (!m) return null;
-    const month = parseInt(m[1], 10);
-    const day = parseInt(m[2], 10);
-    if (isNaN(month) || isNaN(day)) return null;
-    return { month, day };
+    return { month: parseInt(m[1]), day: parseInt(m[2]) };
   }
-
   function formatMonthDay(dateObj) {
-    const m = dateObj.getMonth() + 1;
-    const d = dateObj.getDate();
-    return m + "/" + d;
+    return `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
   }
-
   function updateDayNumbersAndDates() {
-    const chips = Array.from(document.querySelectorAll(".day-chip"));
-    const sections = Array.from(document.querySelectorAll(".day-section"));
-    const idToSection = {};
-    sections.forEach(sec => { idToSection[sec.dataset.id] = sec; });
-
+    const chips = [...document.querySelectorAll(".day-chip")];
+    const sections = [...document.querySelectorAll(".day-section")];
+    const idToSec = {};
+    sections.forEach(sec => (idToSec[sec.dataset.id] = sec));
     let baseDate = null;
     if (chips.length > 0) {
-      const firstSub = chips[0].querySelector(".day-chip-sub");
-      if (firstSub) {
-        const md = parseMonthDay(firstSub.textContent);
-        if (md) baseDate = new Date(2026, md.month - 1, md.day);
-      }
+      const md = parseMonthDay(chips[0].querySelector(".day-chip-sub")?.textContent);
+      if (md) baseDate = new Date(2026, md.month - 1, md.day);
     }
-
-    chips.forEach((chip, idx) => {
-      const dayIndex = idx + 1;
+    chips.forEach((chip, i) => {
       const id = chip.dataset.id;
-
+      const sec = idToSec[id];
       const main = chip.querySelector(".day-chip-main");
-      if (main) {
-        const txt = main.textContent.trim();
-        if (/^Day\s+\d+$/i.test(txt) || txt === "") {
-          main.textContent = "Day " + dayIndex;
-        }
-      }
-
-      const sec = idToSection[id];
+      if (main) main.textContent = `Day ${i + 1}`;
       if (sec) {
-        const headerMain = sec.querySelector(".day-header-main span[contenteditable]");
-        if (headerMain) {
-          const txt2 = headerMain.textContent.trim();
-          if (/^Day\s+\d+$/i.test(txt2) || txt2 === "") {
-            headerMain.textContent = "Day " + dayIndex;
-          }
-        }
+        const head = sec.querySelector(".day-header-main span[contenteditable]");
+        if (head) head.textContent = `Day ${i + 1}`;
       }
-
       if (baseDate) {
-        const dObj = new Date(baseDate);
-        dObj.setDate(dObj.getDate() + idx);
-        const dateStr = formatMonthDay(dObj);
-
-        const sub = chip.querySelector(".day-chip-sub");
-        if (sub) sub.textContent = dateStr;
-
-        if (sec) {
-          const hintDateSpan = sec.querySelector(".day-hint span[contenteditable]");
-          if (hintDateSpan) hintDateSpan.textContent = dateStr;
-        }
+        const d = new Date(baseDate);
+        d.setDate(d.getDate() + i);
+        const str = formatMonthDay(d);
+        chip.querySelector(".day-chip-sub").textContent = str;
+        const hint = sec?.querySelector(".day-hint span[contenteditable]");
+        if (hint) hint.textContent = str;
       }
     });
   }
 
-  // ========= 上方日期 chip：點擊＋拖拉 =========
-  function attachDayChipHandlers(chip) {
-    chip.draggable = true;
+  // ========== 拖拉自動滾動 ==========
+  function enableAutoScroll() {
+    if (autoScrollInterval) return;
+    autoScrollInterval = setInterval(() => {
+      if (!draggingItem && !draggingChip) return;
+      const y = window.event?.clientY || 0;
+      const top = 80;
+      const bottom = window.innerHeight - 80;
+      if (y < top) window.scrollBy(0, -15);
+      else if (y > bottom) window.scrollBy(0, 15);
+    }, 50);
+  }
+  function disableAutoScroll() {
+    clearInterval(autoScrollInterval);
+    autoScrollInterval = null;
+  }
 
-    chip.addEventListener("click", () => {
-      document.querySelectorAll(".day-chip").forEach(c => c.classList.remove("active"));
-      chip.classList.add("active");
-      const id = chip.dataset.id;
-      const sec = document.querySelector('.day-section[data-id="' + id + '"]');
-      if (sec) {
-        sec.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
+  // ========== 長按操作選單 ==========
+  function createContextMenu(target) {
+    if (currentMenu) currentMenu.remove();
+    const menu = document.createElement("div");
+    menu.style.position = "fixed";
+    menu.style.background = "#fff";
+    menu.style.border = "1px solid #ccc";
+    menu.style.padding = "6px 8px";
+    menu.style.borderRadius = "8px";
+    menu.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
+    menu.style.fontSize = "14px";
+    menu.style.zIndex = 9999;
+    menu.style.userSelect = "none";
 
-    chip.addEventListener("dragstart", e => {
-      draggingChip = chip;
-      chip.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
-    });
+    menu.innerHTML = `
+      <div style="padding:4px;cursor:pointer;">🗑️ 刪除此欄位</div>
+      <div style="padding:4px;cursor:pointer;">↕️ 啟用拖拉排序</div>
+    `;
+    document.body.appendChild(menu);
+    currentMenu = menu;
 
-    chip.addEventListener("dragend", () => {
-      if (!draggingChip) return;
-      draggingChip.classList.remove("dragging");
-      draggingChip = null;
-      syncSectionsToChipOrder();
-      updateDayNumbersAndDates();
+    const rect = target.getBoundingClientRect();
+    menu.style.left = rect.left + 20 + "px";
+    menu.style.top = rect.top + 10 + "px";
+
+    const options = menu.querySelectorAll("div");
+    options[0].onclick = () => {
+      target.remove();
       scheduleSave();
-    });
+      menu.remove();
+    };
+    options[1].onclick = () => {
+      isDragMode = true;
+      menu.remove();
+      target.style.border = "2px dashed #999";
+      alert("已啟用拖拉模式，直接拖動即可重新排序。");
+    };
+
+    document.addEventListener("click", () => menu.remove(), { once: true });
   }
 
-  function setupDayNavDrag() {
-    const nav = document.getElementById("dayNav");
-    if (!nav) return;
-
-    nav.addEventListener("dragover", e => {
-      if (!draggingChip) return;
-      e.preventDefault();
-      const after = getDayChipAfter(nav, e.clientX);
-      if (after == null) {
-        nav.appendChild(draggingChip);
-      } else {
-        nav.insertBefore(draggingChip, after);
-      }
+  function enableLongPress(element) {
+    element.addEventListener("mousedown", e => {
+      longPressTimer = setTimeout(() => createContextMenu(element), LONGPRESS_TIME);
     });
+    element.addEventListener("mouseup", () => clearTimeout(longPressTimer));
+    element.addEventListener("mouseleave", () => clearTimeout(longPressTimer));
   }
 
-  function getDayChipAfter(container, x) {
-    const chips = [...container.querySelectorAll(".day-chip:not(.dragging)")];
-    let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
-    chips.forEach(chip => {
-      const box = chip.getBoundingClientRect();
-      const offset = x - (box.left + box.width / 2);
-      if (offset < 0 && offset > closest.offset) {
-        closest = { offset, element: chip };
-      }
-    });
-    return closest.element;
-  }
-
-  function syncSectionsToChipOrder() {
-    const chips = Array.from(document.querySelectorAll(".day-chip"));
-    const sections = Array.from(document.querySelectorAll(".day-section"));
-    const root = document.getElementById("pageRoot");
-    const map = {};
-    sections.forEach(sec => { map[sec.dataset.id] = sec; });
-
-    chips.forEach(chip => {
-      const sec = map[chip.dataset.id];
-      if (sec) root.appendChild(sec);
-    });
-  }
-
-  // ========= 一天裡的欄位拖拉 =========
-  function makeDayItemDraggable(el) {
+  // ========== 拖拉欄位 ==========
+  function makeDraggable(el) {
     if (!el) return;
     el.draggable = true;
-    el.classList.add("day-item");
-
     el.addEventListener("dragstart", e => {
-      draggingItem = el;
-      el.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
+      if (!isDragMode) e.preventDefault();
+      else {
+        draggingItem = el;
+        el.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        enableAutoScroll();
+      }
     });
-
     el.addEventListener("dragend", () => {
-      if (!draggingItem) return;
-      draggingItem.classList.remove("dragging");
+      el.classList.remove("dragging");
       draggingItem = null;
+      disableAutoScroll();
+      isDragMode = false;
+      el.style.border = "";
       scheduleSave();
     });
   }
 
-  function setupDayItemDropZones() {
-    const dayCards = document.querySelectorAll(".day-card");
-    dayCards.forEach(card => {
+  function setupDropZones() {
+    document.querySelectorAll(".day-card").forEach(card => {
       card.addEventListener("dragover", e => {
         if (!draggingItem) return;
         e.preventDefault();
-        const after = getDayItemAfter(card, e.clientY);
-        if (after == null) {
-          const addRow = card.querySelector(".add-spot-card");
-          if (addRow) {
-            card.insertBefore(draggingItem, addRow);
-          } else {
-            card.appendChild(draggingItem);
-          }
-        } else {
-          card.insertBefore(draggingItem, after);
-        }
+        const after = getAfterElement(card, e.clientY);
+        if (after == null) card.appendChild(draggingItem);
+        else card.insertBefore(draggingItem, after);
       });
     });
   }
-
-  function getDayItemAfter(container, y) {
-    const items = [...container.querySelectorAll(".day-item:not(.dragging)")];
+  function getAfterElement(container, y) {
+    const els = [...container.querySelectorAll(".spot-card:not(.dragging), .day-note-card:not(.dragging)")];
     let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
-    items.forEach(item => {
-      const box = item.getBoundingClientRect();
+    els.forEach(el => {
+      const box = el.getBoundingClientRect();
       const offset = y - (box.top + box.height / 2);
-      if (offset < 0 && offset > closest.offset) {
-        closest = { offset, element: item };
-      }
+      if (offset < 0 && offset > closest.offset) closest = { offset, element: el };
     });
     return closest.element;
   }
 
-  // ========= 新增／刪除一天 =========
-  function addDay() {
-    saveSnapshot();
-
-    const nav = document.getElementById("dayNav");
-    const chips = Array.from(nav.querySelectorAll(".day-chip"));
-    const sections = Array.from(document.querySelectorAll(".day-section"));
-    const lastSection = sections[sections.length - 1];
-
-    const newId = "day-" + Date.now();
-    const newIndex = chips.length + 1;
-
-    let baseDate = new Date(2026, 4, 8);
-    if (chips.length > 0) {
-      const lastChipSub = chips[chips.length - 1].querySelector(".day-chip-sub");
-      if (lastChipSub) {
-        const md = parseMonthDay(lastChipSub.textContent);
-        if (md) {
-          baseDate = new Date(2026, md.month - 1, md.day);
-          baseDate.setDate(baseDate.getDate() + 1);
-        }
-      }
-    }
-    const dateStr = formatMonthDay(baseDate);
-
-    const chip = document.createElement("div");
-    chip.className = "day-chip";
-    chip.dataset.id = newId;
-    chip.innerHTML = `
-      <span class="day-chip-main" contenteditable="true">Day ${newIndex}</span>
-      <span class="day-chip-sub" contenteditable="true">${dateStr}</span>
-    `;
-    nav.appendChild(chip);
-    attachDayChipHandlers(chip);
-
-    const sec = document.createElement("section");
-    sec.className = "day-section";
-    sec.dataset.id = newId;
-    sec.innerHTML = `
-      <div class="day-card">
-        <div class="day-header">
-          <div class="day-header-main">
-            <span contenteditable="true">Day ${newIndex}</span>
-          </div>
-          <div class="day-header-sub">
-            <span contenteditable="true">（新的一天行程）</span>
-          </div>
-        </div>
-        <div class="day-hint">
-          日期：<span contenteditable="true">${dateStr}</span>
-        </div>
-        <article class="spot-card">
-          <div class="spot-title" contenteditable="true">新行程</div>
-          <div class="spot-name-ja" contenteditable="true">日文名稱或地址</div>
-          <div class="spot-meta" contenteditable="true">可以在這裡寫簡短說明。</div>
-          <div class="btn-row-spot">
-            <button class="btn small" type="button">地圖預覽</button>
-            <button class="btn small" type="button">在地圖上搜尋</button>
-            <button class="btn small" type="button">從飯店導航</button>
-            <button class="btn small" type="button">📷 新增圖片</button>
-          </div>
-          <div class="spot-note">
-            <div class="spot-note-title"><span>備註</span></div>
-            <div class="spot-note-body" contenteditable="true"></div>
-          </div>
-        </article>
-        <div class="add-spot-card">
-          <button type="button" class="btn small add-spot-btn">＋ 新增行程卡片</button>
-        </div>
-        <div class="day-note-card">
-          <div class="day-note-header">
-            <div class="day-note-title">當日備註／花費</div>
-            <button class="day-note-photo-btn" type="button">📷 新增圖片</button>
-          </div>
-          <div class="day-note-box day-note-body" contenteditable="true"></div>
-          <div class="day-note-photos"></div>
-        </div>
-      </div>
-    `;
-    if (lastSection) {
-      lastSection.after(sec);
-    } else {
-      const pageRoot = document.getElementById("pageRoot");
-      pageRoot.appendChild(sec);
-    }
-
-    makeDayItemDraggable(sec.querySelector(".spot-card"));
-    makeDayItemDraggable(sec.querySelector(".day-note-card"));
-    attachAddSpotButtons(sec);
-    setupDayItemDropZones();
-    updateDayNumbersAndDates();
-    scheduleSave();
-  }
-
-  function removeLastDay() {
-    const sections = Array.from(document.querySelectorAll(".day-section"));
-    if (sections.length <= 1) return;
-    saveSnapshot();
-
-    const lastSection = sections[sections.length - 1];
-    const id = lastSection.dataset.id;
-
-    const chip = document.querySelector('.day-chip[data-id="' + id + '"]');
-    if (chip) chip.remove();
-    lastSection.remove();
-
-    updateDayNumbersAndDates();
-    scheduleSave();
-  }
-
-  // ========= 新增行程卡片 =========
-  function attachAddSpotButtons(root) {
-    const buttons = root.querySelectorAll(".add-spot-btn");
-    buttons.forEach(btn => {
-      btn.onclick = () => {
-        saveSnapshot();
-
-        const dayCard = btn.closest(".day-card");
-        if (!dayCard) return;
-
-        const newCard = document.createElement("article");
-        newCard.className = "spot-card";
-        newCard.innerHTML = `
-          <div class="spot-title" contenteditable="true">新行程</div>
-          <div class="spot-name-ja" contenteditable="true">日文名稱或地址</div>
-          <div class="spot-meta" contenteditable="true">可以在這裡寫簡短說明。</div>
-          <div class="btn-row-spot">
-            <button class="btn small" type="button">地圖預覽</button>
-            <button class="btn small" type="button">在地圖上搜尋</button>
-            <button class="btn small" type="button">從飯店導航</button>
-            <button class="btn small" type="button">📷 新增圖片</button>
-          </div>
-          <div class="spot-note">
-            <div class="spot-note-title"><span>備註</span></div>
-            <div class="spot-note-body" contenteditable="true"></div>
-          </div>
-        `;
-        const addRow = btn.closest(".add-spot-card");
-        dayCard.insertBefore(newCard, addRow);
-
-        makeDayItemDraggable(newCard);
-        setupDayItemDropZones();
-        scheduleSave();
-      };
-    });
-  }
-
-  // ========= 匯出／匯入 JSON =========
+  // ========== 匯出 / 匯入 JSON ==========
   function exportJson() {
-    const root = document.getElementById("pageRoot");
-    if (!root) return;
-    const data = {
-      savedAt: new Date().toISOString(),
-      html: root.innerHTML
-    };
+    const html = document.getElementById("pageRoot").innerHTML;
+    const data = { html, time: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = "NijiTrip_backup.json";
-    document.body.appendChild(a);
     a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
   }
-
   function importJson(file) {
-    if (!file) return;
     const reader = new FileReader();
     reader.onload = e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (data && data.html) {
-          saveSnapshot();
-          restoreSnapshot(data.html);
-        }
-      } catch (err) {
-        alert("匯入失敗，檔案格式不正確。");
-      }
+      const data = JSON.parse(e.target.result);
+      if (data.html) restoreSnapshot(data.html);
     };
-    reader.readAsText(file, "utf-8");
+    reader.readAsText(file);
   }
 
-  // ========= 行程卡片裡的按鈕功能 =========
-  function ensurePhotoInput() {
-    if (photoInput) return;
-    photoInput = document.createElement("input");
-    photoInput.type = "file";
-    photoInput.accept = "image/*";
-    photoInput.style.display = "none";
-    document.body.appendChild(photoInput);
-
-    photoInput.addEventListener("change", () => {
-      const file = photoInput.files && photoInput.files[0];
-      if (!file || !currentPhotoTarget) return;
-
-      const reader = new FileReader();
-      reader.onload = e => {
-        const url = e.target.result;
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = "行程照片";
-        img.style.width = "70px";
-        img.style.height = "70px";
-        img.style.objectFit = "cover";
-        img.style.borderRadius = "10px";
-        img.style.marginRight = "4px";
-        img.style.marginTop = "4px";
-        currentPhotoTarget.appendChild(img);
-
-        img.addEventListener("click", () => {
-          if (confirm("要刪除這張照片嗎？")) {
-            img.remove();
-            scheduleSave();
-          }
-        });
-
-        scheduleSave();
-      };
-      reader.readAsDataURL(file);
-      photoInput.value = "";
-    });
-  }
-
-  function setupButtonActions() {
-    if (buttonsBound) return;
-    buttonsBound = true;
-
-    document.addEventListener("click", e => {
-      const btn = e.target.closest("button");
-      if (!btn) return;
-
-      const text = btn.textContent.trim();
-
-      // 匯出／匯入／新增天數／刪除天數按鈕已各自綁好，這裡處理卡片內的
-      if (btn.classList.contains("day-note-photo-btn")) {
-        // 當日備註／花費的新增圖片
-        ensurePhotoInput();
-        const dayCard = btn.closest(".day-card");
-        if (!dayCard) return;
-        const container = dayCard.querySelector(".day-note-photos") ||
-                          dayCard.querySelector(".day-note-box") ||
-                          dayCard;
-        currentPhotoTarget = container;
-        photoInput.click();
-        return;
-      }
-
-      // 行程卡片上的小按鈕
-      if (btn.closest(".btn-row-spot")) {
-        const card = btn.closest(".spot-card");
-        if (!card) return;
-
-        const jpEl = card.querySelector(".spot-name-ja");
-        const zhEl = card.querySelector(".spot-title");
-        const dest = (jpEl && jpEl.textContent.trim()) ||
-                     (zhEl && zhEl.textContent.trim()) ||
-                     "";
-
-        if (!dest) {
-          alert("請先在行程卡片裡填寫地點名稱（尤其是日文名稱或地址）");
-          return;
-        }
-
-        if (text.includes("地圖預覽") || text.includes("在地圖上搜尋")) {
-          const url = "https://www.google.com/maps/search/?api=1&query=" +
-                      encodeURIComponent(dest);
-          window.open(url, "_blank");
-          return;
-        }
-
-        if (text.includes("從飯店導航")) {
-          const url =
-            "https://www.google.com/maps/dir/?api=1" +
-            "&origin=" + encodeURIComponent(HOTEL_NAME) +
-            "&destination=" + encodeURIComponent(dest);
-          window.open(url, "_blank");
-          return;
-        }
-
-        if (text.includes("📷") || text.includes("新增圖片")) {
-          ensurePhotoInput();
-          const note = card.querySelector(".spot-note") || card;
-          currentPhotoTarget = note;
-          photoInput.click();
-          return;
-        }
-      }
-    });
-  }
-
-  // ========= 綁定所有事件 =========
+  // ========== 初始化 ==========
   function attachAllHandlers() {
-    document.querySelectorAll("[contenteditable]").forEach(el => {
-      el.removeEventListener("input", scheduleSave);
-      el.addEventListener("input", scheduleSave);
+    document.querySelectorAll("[contenteditable]").forEach(el =>
+      el.addEventListener("input", scheduleSave)
+    );
+
+    document.querySelectorAll(".spot-card, .day-note-card").forEach(el => {
+      makeDraggable(el);
+      enableLongPress(el);
     });
 
-    document.querySelectorAll(".day-chip").forEach(attachDayChipHandlers);
-    setupDayNavDrag();
-
-    document.querySelectorAll(".spot-card").forEach(makeDayItemDraggable);
-    document.querySelectorAll(".day-note-card").forEach(makeDayItemDraggable);
-    setupDayItemDropZones();
-
-    attachAddSpotButtons(document);
-    setupButtonActions();
+    setupDropZones();
+    document.getElementById("undoBtn").onclick = undo;
+    document.getElementById("exportBtn").onclick = exportJson;
+    const importFile = document.getElementById("importFile");
+    const importBtn = document.getElementById("importBtn");
+    if (importBtn) importBtn.onclick = () => importFile.click();
+    if (importFile)
+      importFile.onchange = () => {
+        importJson(importFile.files[0]);
+        importFile.value = "";
+      };
 
     const addDayBtn = document.getElementById("addDayBtn");
-    if (addDayBtn) addDayBtn.onclick = addDay;
-
-    const removeLastDayBtn = document.getElementById("removeLastDayBtn");
-    if (removeLastDayBtn) removeLastDayBtn.onclick = removeLastDay;
-
-    const undoBtn = document.getElementById("undoBtn");
-    if (undoBtn) undoBtn.onclick = undo;
-
-    const exportBtn = document.getElementById("exportBtn");
-    const importBtn = document.getElementById("importBtn");
-    const importFile = document.getElementById("importFile");
-
-    if (exportBtn) exportBtn.onclick = exportJson;
-    if (importBtn && importFile) {
-      importBtn.onclick = () => importFile.click();
-      importFile.onchange = () => {
-        if (importFile.files && importFile.files[0]) {
-          importJson(importFile.files[0]);
-          importFile.value = "";
-        }
+    if (addDayBtn)
+      addDayBtn.onclick = () => {
+        alert("請用既有的新增天數功能，拖拉排序與備份功能將自動套用。");
       };
-    }
-
-    const firstDateSpan =
-      document.querySelector('.day-section[data-id="day-1"] .day-hint span[contenteditable]') ||
-      document.querySelector('.day-chip[data-id="day-1"] .day-chip-sub');
-    if (firstDateSpan) {
-      firstDateSpan.addEventListener("input", () => {
-        updateDayNumbersAndDates();
-        scheduleSave();
-      });
-    }
-
-    updateDayNumbersAndDates();
   }
 
-  // ========= 初始化 =========
   document.addEventListener("DOMContentLoaded", () => {
     const root = document.getElementById("pageRoot");
-    if (!root) return;
-
-    try {
-      const saved = localStorage.getItem(LOCAL_KEY);
-      if (saved) {
-        root.innerHTML = saved;
-      }
-    } catch (e) {
-      console.warn("讀取 localStorage 失敗：", e);
-    }
-
+    const saved = localStorage.getItem(LOCAL_KEY);
+    if (saved) root.innerHTML = saved;
     saveSnapshot();
     attachAllHandlers();
   });
 })();
-        </script>
+</script>
 
 </body>
 </html>
