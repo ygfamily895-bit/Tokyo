@@ -1,0 +1,1271 @@
+<!DOCTYPE html>  <html lang="zh-Hant">  
+<head>  
+  <meta charset="UTF-8" />  
+  <title>Niji Trip 2026 · 行程表</title>  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />    <style>  
+    :root {  
+      --bg-main: #ffe4b8;  
+      --bg-card: #fff7e8;  
+      --bg-daychip: #fff6e5;  
+      --bg-daychip-active: #ffffff;  
+      --brown-main: #7a4a26;  
+      --brown-soft: #a26b3a;  
+      --border-soft: rgba(186, 140, 91, 0.4);  
+      --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.08);  
+      --radius-big: 22px;  
+      --radius-card: 20px;  
+      --radius-small: 16px;  
+    }  
+  
+    * {  
+      box-sizing: border-box;  
+    }  
+  
+    html, body {  
+      margin: 0;  
+      padding: 0;  
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", sans-serif;  
+      background: #fce0b3;  
+      color: var(--brown-main);  
+    }  
+  
+    body {  
+      min-height: 100vh;  
+    }  
+  
+    .page {  
+      max-width: 900px;  
+      margin: 0 auto;  
+      padding: 18px 14px 40px;  
+    }  
+  
+    header.app-header {  
+      background: var(--bg-card);  
+      border-radius: 26px;  
+      padding: 20px 18px 18px;  
+      box-shadow: var(--shadow-soft);  
+      margin-bottom: 16px;  
+    }  
+  
+    .app-title-row {  
+      display: flex;  
+      align-items: center;  
+      gap: 8px;  
+      margin-bottom: 4px;  
+    }  
+  
+    .app-title-row h1 {  
+      font-size: 28px;  
+      margin: 0;  
+      font-weight: 800;  
+      letter-spacing: 0.04em;  
+    }  
+  
+    .app-title-row span.emoji {  
+      font-size: 26px;  
+    }  
+  
+    .app-desc {  
+      margin: 6px 0 12px;  
+      line-height: 1.6;  
+      font-size: 14px;  
+      color: var(--brown-soft);  
+    }  
+  
+    .app-note {  
+      font-size: 13px;  
+      color: var(--brown-soft);  
+      display: flex;  
+      align-items: flex-start;  
+      gap: 6px;  
+      margin-bottom: 14px;  
+    }  
+  
+    .app-note span.emoji {  
+      font-size: 16px;  
+      line-height: 1.2;  
+      margin-top: 2px;  
+    }  
+  
+    .btn-row {  
+      display: flex;  
+      flex-wrap: wrap;  
+      gap: 10px;  
+      margin-top: 4px;  
+    }  
+  
+    .btn {  
+      border: none;  
+      border-radius: 999px;  
+      padding: 8px 16px;  
+      font-size: 14px;  
+      background: #ffd59a;  
+      color: var(--brown-main);  
+      box-shadow: var(--shadow-soft);  
+      cursor: pointer;  
+      white-space: nowrap;  
+    }  
+  
+    .btn.primary {  
+      background: #ffb85c;  
+      color: #5a351e;  
+      font-weight: 600;  
+    }  
+  
+    .btn.danger {  
+      background: #ffb0a6;  
+      color: #7a221b;  
+      font-weight: 600;  
+    }  
+  
+    .btn:active {  
+      transform: translateY(1px);  
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);  
+    }  
+  
+    /* Day chips row */  
+    .day-nav {  
+      background: #e3f2ff;  
+      border-radius: 24px 24px 18px 18px;  
+      padding: 10px 8px 10px;  
+      margin: 0 -6px 10px;  
+      overflow-x: auto;  
+      display: flex;  
+      gap: 10px;  
+    }  
+  
+    .day-chip {  
+      flex: 0 0 auto;  
+      min-width: 86px;  
+      background: var(--bg-daychip);  
+      border-radius: var(--radius-big);  
+      padding: 6px 10px 4px;  
+      text-align: center;  
+      box-shadow: var(--shadow-soft);  
+      cursor: grab;  
+      border: 1px solid transparent;  
+    }  
+  
+    .day-chip.active {  
+      background: var(--bg-daychip-active);  
+      border-color: rgba(122, 74, 38, 0.2);  
+    }  
+  
+    .day-chip-main,  
+    .day-chip-sub {  
+      display: block;  
+    }  
+  
+    .day-chip-main {  
+      font-weight: 700;  
+      font-size: 15px;  
+      margin-bottom: 2px;  
+    }  
+  
+    .day-chip-sub {  
+      font-size: 12px;  
+      color: var(--brown-soft);  
+    }  
+  
+    .day-chip-main[contenteditable],  
+    .day-chip-sub[contenteditable] {  
+      outline: none;  
+    }  
+  
+    .day-chip.dragging {  
+      opacity: 0.6;  
+      cursor: grabbing;  
+    }  
+  
+    /* Day section */  
+    .day-section {  
+      margin-top: 8px;  
+      margin-bottom: 14px;  
+    }  
+  
+    .day-card {  
+      background: #e5f4ff;  
+      border-radius: 28px;  
+      padding: 14px 10px 16px;  
+      box-shadow: var(--shadow-soft);  
+    }  
+  
+    .day-header {  
+      display: flex;  
+      flex-wrap: wrap;  
+      align-items: baseline;  
+      gap: 8px;  
+      margin-bottom: 6px;  
+      padding: 0 6px;  
+    }  
+  
+    .day-header-main {  
+      background: #ffffff;  
+      border-radius: 999px;  
+      padding: 7px 14px;  
+      font-size: 18px;  
+      font-weight: 700;  
+      box-shadow: var(--shadow-soft);  
+    }  
+  
+    .day-header-main span[contenteditable] {  
+      outline: none;  
+    }  
+  
+    .day-header-sub {  
+      font-size: 15px;  
+      color: var(--brown-soft);  
+    }  
+  
+    .day-header-sub span[contenteditable] {  
+      outline: none;  
+      border-bottom: 1px dashed rgba(122,74,38,0.2);  
+    }  
+  
+    .day-hint {  
+      font-size: 12px;  
+      color: var(--brown-soft);  
+      margin: 2px 6px 10px;  
+    }  
+  
+    .day-hint span[contenteditable] {  
+      outline: none;  
+      border-bottom: 1px dashed rgba(122,74,38,0.2);  
+    }  
+  
+    /* Spot card */  
+    .spot-card {  
+      background: var(--bg-card);  
+      border-radius: var(--radius-card);  
+      padding: 14px 14px 12px;  
+      box-shadow: var(--shadow-soft);  
+      margin: 0 4px 10px;  
+      cursor: grab;  
+    }  
+  
+    .spot-card.dragging {  
+      opacity: 0.6;  
+      cursor: grabbing;  
+    }  
+  
+    .spot-title {  
+      font-weight: 700;  
+      margin-bottom: 4px;  
+      font-size: 16px;  
+    }  
+  
+    .spot-title[contenteditable],  
+    .spot-name-ja[contenteditable],  
+    .spot-meta[contenteditable],  
+    .spot-note-body[contenteditable],  
+    .day-note-body[contenteditable] {  
+      outline: none;  
+    }  
+  
+    .spot-name-ja {  
+      font-size: 14px;  
+      color: var(--brown-soft);  
+      margin-bottom: 3px;  
+    }  
+  
+    .spot-meta {  
+      font-size: 13px;  
+      color: var(--brown-soft);  
+      margin-bottom: 8px;  
+    }  
+  
+    .btn-row-spot {  
+      display: flex;  
+      flex-wrap: wrap;  
+      gap: 8px;  
+      margin-bottom: 8px;  
+    }  
+  
+    .btn.small {  
+      padding: 6px 11px;  
+      font-size: 13px;  
+    }  
+  
+    .spot-note {  
+      border-radius: 12px;  
+      border: 1px dashed var(--border-soft);  
+      background: #fffdf6;  
+      padding: 8px 9px;  
+      margin-top: 4px;  
+      font-size: 13px;  
+    }  
+  
+    .spot-note-title {  
+      font-weight: 600;  
+      margin-bottom: 2px;  
+      font-size: 12px;  
+      color: var(--brown-soft);  
+      display: flex;  
+      justify-content: space-between;  
+      align-items: center;  
+      gap: 6px;  
+    }  
+  
+    .spot-note-actions {  
+      display: flex;  
+      gap: 6px;  
+      font-size: 12px;  
+    }  
+  
+    .spot-note-actions button {  
+      border-radius: 999px;  
+      border: none;  
+      padding: 3px 8px;  
+      font-size: 11px;  
+      background: #ffe4ba;  
+      color: var(--brown-main);  
+      cursor: pointer;  
+    }  
+  
+    .spot-note-body {  
+      white-space: pre-wrap;  
+      min-height: 20px;  
+    }  
+  
+    /* Day bottom note */  
+    .day-note-card {  
+      background: var(--bg-card);  
+      border-radius: var(--radius-card);  
+      padding: 12px 12px 10px;  
+      box-shadow: var(--shadow-soft);  
+      margin: 10px 4px 0;  
+    }  
+  
+    .day-note-header {  
+      display: flex;  
+      justify-content: space-between;  
+      align-items: center;  
+      gap: 10px;  
+      font-size: 15px;  
+      font-weight: 600;  
+      margin-bottom: 6px;  
+    }  
+  
+    .day-note-title {  
+      white-space: nowrap;  
+    }  
+  
+    .day-note-photo-btn {  
+      border-radius: 999px;  
+      border: none;  
+      padding: 5px 10px;  
+      font-size: 13px;  
+      background: #ffe1a8;  
+      cursor: pointer;  
+      display: inline-flex;  
+      align-items: center;  
+      gap: 4px;  
+    }  
+  
+    .day-note-box {  
+      border-radius: 12px;  
+      border: 1px dashed var(--border-soft);  
+      background: #fffdf6;  
+      padding: 9px 10px;  
+      font-size: 13px;  
+      min-height: 32px;  
+      white-space: pre-wrap;  
+    }  
+  
+    .day-note-photos {  
+      display: flex;  
+      flex-wrap: wrap;  
+      gap: 6px;  
+      margin-top: 6px;  
+    }  
+  
+    .day-note-photo {  
+      width: 64px;  
+      height: 64px;  
+      border-radius: 10px;  
+      object-fit: cover;  
+      box-shadow: var(--shadow-soft);  
+    }  
+  
+    .add-spot-card {  
+      margin: 6px 6px 0;  
+      padding: 0 8px 4px;  
+      display: flex;  
+      justify-content: flex-start;  
+    }  
+  
+    .add-spot-card .btn {  
+      font-size: 14px;  
+    }  
+  
+    /* Undo floating button (可自行關掉) */  
+    .undo-floating {  
+      position: fixed;  
+      left: 10px;  
+      bottom: 10px;  
+      z-index: 20;  
+    }  
+  
+    .undo-floating button {  
+      width: 44px;  
+      height: 44px;  
+      border-radius: 50%;  
+      border: none;  
+      background: #ffcf8f;  
+      box-shadow: var(--shadow-soft);  
+      font-size: 22px;  
+      cursor: pointer;  
+    }  
+  
+    @media (max-width: 600px) {  
+      .app-title-row h1 {  
+        font-size: 24px;  
+      }  
+      .day-card {  
+        border-radius: 24px;  
+      }  
+      .spot-card {  
+        padding: 12px 11px 10px;  
+      }  
+    }  
+  </style>  </head>  <body>  
+<div class="page" id="pageRoot">    <!-- Header -->    <header class="app-header">  
+    <div class="app-title-row">  
+      <h1 contenteditable="true">Niji Trip 2026</h1>  
+      <span class="emoji">🌈</span>  
+    </div>  
+    <p class="app-desc" contenteditable="true">  
+      東京行程・暖色主題。行程欄位可拖拉排序、住宿＋圖片＋雲端備份。可以自由修改這段說明文字。  
+    </p>  
+    <div class="app-note">  
+      <span class="emoji">✏️</span>  
+      <div contenteditable="true">  
+        每一步驟的說明都可以在這裡調整；本版本支援拖拉排序、上一步復原、JSON 備份／還原。  
+      </div>  
+    </div>  
+    <div class="btn-row">  
+      <button class="btn" type="button" id="exportBtn">匯出備份（JSON）</button>  
+      <button class="btn" type="button" id="importBtn">匯入備份</button>  
+      <button class="btn primary" type="button" id="addDayBtn">＋ 新增一天</button>  
+      <button class="btn danger" type="button" id="removeLastDayBtn">－ 刪除最後一天</button>  
+    </div>  
+  </header>    <!-- Day chips row -->    <div class="day-nav" id="dayNav">  
+    <div class="day-chip active" data-id="day-1" draggable="true">  
+      <span class="day-chip-main" contenteditable="true">Day 1</span>  
+      <span class="day-chip-sub" contenteditable="true">5/8</span>  
+    </div>  
+    <div class="day-chip" data-id="day-2" draggable="true">  
+      <span class="day-chip-main" contenteditable="true">Day 2</span>  
+      <span class="day-chip-sub" contenteditable="true">5/9</span>  
+    </div>  
+    <div class="day-chip" data-id="day-3" draggable="true">  
+      <span class="day-chip-main" contenteditable="true">Day 3</span>  
+      <span class="day-chip-sub" contenteditable="true">5/10</span>  
+    </div>  
+  </div>    <!-- Day 1 section -->    <section class="day-section" data-id="day-1">  
+    <div class="day-card">  
+      <div class="day-header">  
+        <div class="day-header-main">  
+          <span contenteditable="true">Day 1</span>  
+        </div>  
+        <div class="day-header-sub">  
+          <span contenteditable="true">（範例）成田機場・入住上野</span>  
+        </div>  
+      </div>  <div class="day-hint">  
+    日期：<span contenteditable="true">5/8</span>  
+    <span style="margin-left:4px;color:var(--brown-soft);" contenteditable="true">（修改 Day1 日期，其餘天數會自動接續）</span>  
+  </div>  
+
+  <!-- example spot card -->  
+  <article class="spot-card" draggable="true">  
+    <div class="spot-title" contenteditable="true">範例景點</div>  
+    <div class="spot-name-ja" contenteditable="true">日文名稱或地址</div>  
+    <div class="spot-meta" contenteditable="true">地區・簡短說明可寫在這裡，例如：上野・車站附近・排隊名店</div>  
+
+    <div class="btn-row-spot">  
+      <button class="btn small" type="button">地圖預覽</button>  
+      <button class="btn small" type="button">在地圖上搜尋</button>  
+      <button class="btn small" type="button">從飯店導航</button>  
+      <button class="btn small" type="button">📷 新增圖片</button>  
+    </div>  
+
+    <div class="spot-note">  
+      <div class="spot-note-title">  
+        <span>備註</span>  
+        <div class="spot-note-actions">  
+          <button type="button">＋ 小提示</button>  
+        </div>  
+      </div>  
+      <div class="spot-note-body" contenteditable="true">
+
+可在這裡寫這個景點的排隊時間、餐點建議、附近順遊地點等等…
+</div>
+</div>
+</article>
+
+<!-- 新增卡片按鈕 -->  
+  <div class="add-spot-card">  
+    <button type="button" class="btn small add-spot-btn">＋ 新增行程卡片</button>  
+  </div>  
+
+  <!-- Day note / cost -->  
+  <div class="day-note-card">  
+    <div class="day-note-header">  
+      <div class="day-note-title">當日備註／花費</div>  
+      <button class="day-note-photo-btn" type="button">  
+        📷 新增圖片  
+      </button>  
+    </div>  
+    <div class="day-note-box day-note-body" contenteditable="true">
+
+例：餐飲 xxx 元、交通 xxx 元、購物 xxx 元、其他心得……
+</div>
+<div class="day-note-photos">
+<!-- 之後若要真的加圖，可以用 <img class="day-note-photo"> -->
+</div>
+</div>
+</div>
+
+  </section>    <!-- Day 2 section -->    <section class="day-section" data-id="day-2">  
+    <div class="day-card">  
+      <div class="day-header">  
+        <div class="day-header-main">  
+          <span contenteditable="true">Day 2</span>  
+        </div>  
+        <div class="day-header-sub">  
+          <span contenteditable="true">（範例）上野・淺草散步</span>  
+        </div>  
+      </div>  
+      <div class="day-hint">  
+        日期：<span contenteditable="true">5/9</span>  
+      </div>  <article class="spot-card" draggable="true">  
+    <div class="spot-title" contenteditable="true">範例景點 2</div>  
+    <div class="spot-name-ja" contenteditable="true">日文名稱或地址</div>  
+    <div class="spot-meta" contenteditable="true">可以自行編輯這裡的說明文字。</div>  
+
+    <div class="btn-row-spot">  
+      <button class="btn small" type="button">地圖預覽</button>  
+      <button class="btn small" type="button">在地圖上搜尋</button>  
+      <button class="btn small" type="button">從飯店導航</button>  
+      <button class="btn small" type="button">📷 新增圖片</button>  
+    </div>  
+
+    <div class="spot-note">  
+      <div class="spot-note-title">  
+        <span>備註</span>  
+      </div>  
+      <div class="spot-note-body" contenteditable="true">
+
+這一格也可以改成你習慣的格式，例如分早、中、晚餐、交通等等。
+</div>
+</div>
+</article>
+
+<div class="add-spot-card">  
+    <button type="button" class="btn small add-spot-btn">＋ 新增行程卡片</button>  
+  </div>  
+
+  <div class="day-note-card">  
+    <div class="day-note-header">  
+      <div class="day-note-title">當日備註／花費</div>  
+      <button class="day-note-photo-btn" type="button">📷 新增圖片</button>  
+    </div>  
+    <div class="day-note-box day-note-body" contenteditable="true"></div>  
+    <div class="day-note-photos"></div>  
+  </div>  
+</div>
+
+  </section>    <!-- Day 3 section -->    <section class="day-section" data-id="day-3">  
+    <div class="day-card">  
+      <div class="day-header">  
+        <div class="day-header-main">  
+          <span contenteditable="true">Day 3</span>  
+        </div>  
+        <div class="day-header-sub">  
+          <span contenteditable="true">（範例）自由活動日</span>  
+        </div>  
+      </div>  
+      <div class="day-hint">  
+        日期：<span contenteditable="true">5/10</span>  
+      </div>  <div class="add-spot-card">  
+    <button type="button" class="btn small add-spot-btn">＋ 新增行程卡片</button>  
+  </div>  
+
+  <div class="day-note-card">  
+    <div class="day-note-header">  
+      <div class="day-note-title">當日備註／花費</div>  
+      <button class="day-note-photo-btn" type="button">📷 新增圖片</button>  
+    </div>  
+    <div class="day-note-box day-note-body" contenteditable="true"></div>  
+    <div class="day-note-photos"></div>  
+  </div>  
+</div>
+
+  </section>  </div>  <!-- Undo floating button -->  <div class="undo-floating">  
+  <button id="undoBtn" title="上一步">↩</button>  
+</div>  <input type="file" id="importFile" accept="application/json" style="display:none" />  
+<script>  
+(function () {  
+  const MAX_UNDO = 10;  
+  const LOCAL_KEY = "niji-trip-2026-html-v3";  
+  const HOTEL_NAME = "ベッセルイン上野入谷駅前";  let undoStack = [];
+let saveTimer = null;
+let draggingChip = null;
+let draggingItem = null;
+let buttonsBound = false;
+let photoInput = null;
+let currentPhotoTarget = null;
+
+// ========= 共用：儲存／復原 =========
+function saveSnapshot() {
+const root = document.getElementById("pageRoot");
+if (!root) return;
+const html = root.innerHTML;
+undoStack.push(html);
+if (undoStack.length > MAX_UNDO) undoStack.shift();
+try {
+localStorage.setItem(LOCAL_KEY, html);
+} catch (e) {
+console.warn("localStorage 儲存失敗：", e);
+}
+console.log("snapshot saved, length =", undoStack.length);
+}
+
+function scheduleSave() {
+clearTimeout(saveTimer);
+saveTimer = setTimeout(saveSnapshot, 800);
+}
+
+function restoreSnapshot(html) {
+const root = document.getElementById("pageRoot");
+if (!root) return;
+root.innerHTML = html;
+try {
+localStorage.setItem(LOCAL_KEY, html);
+} catch (e) {
+console.warn("localStorage 儲存失敗：", e);
+}
+attachAllHandlers();
+}
+
+function undo() {
+if (undoStack.length === 0) return;
+const last = undoStack.pop();
+restoreSnapshot(last);
+}
+
+// ========= 日期計算 =========
+function parseMonthDay(text) {
+const m = text.match(/(\d{1,2})\s*/\s*(\d{1,2})/);
+if (!m) return null;
+const month = parseInt(m[1], 10);
+const day = parseInt(m[2], 10);
+if (isNaN(month) || isNaN(day)) return null;
+return { month, day };
+}
+
+function formatMonthDay(dateObj) {
+const m = dateObj.getMonth() + 1;
+const d = dateObj.getDate();
+return m + "/" + d;
+}
+
+function updateDayNumbersAndDates() {
+const chips = Array.from(document.querySelectorAll(".day-chip"));
+const sections = Array.from(document.querySelectorAll(".day-section"));
+const idToSection = {};
+sections.forEach(sec => { idToSection[sec.dataset.id] = sec; });
+
+let baseDate = null;  
+if (chips.length > 0) {  
+  const firstSub = chips[0].querySelector(".day-chip-sub");  
+  if (firstSub) {  
+    const md = parseMonthDay(firstSub.textContent);  
+    if (md) baseDate = new Date(2026, md.month - 1, md.day);  
+  }  
+}  
+
+chips.forEach((chip, idx) => {  
+  const dayIndex = idx + 1;  
+  const id = chip.dataset.id;  
+
+  const main = chip.querySelector(".day-chip-main");  
+  if (main) {  
+    const txt = main.textContent.trim();  
+    if (/^Day\s+\d+$/i.test(txt) || txt === "") {  
+      main.textContent = "Day " + dayIndex;  
+    }  
+  }  
+
+  const sec = idToSection[id];  
+  if (sec) {  
+    const headerMain = sec.querySelector(".day-header-main span[contenteditable]");  
+    if (headerMain) {  
+      const txt2 = headerMain.textContent.trim();  
+      if (/^Day\s+\d+$/i.test(txt2) || txt2 === "") {  
+        headerMain.textContent = "Day " + dayIndex;  
+      }  
+    }  
+  }  
+
+  if (baseDate) {  
+    const dObj = new Date(baseDate);  
+    dObj.setDate(dObj.getDate() + idx);  
+    const dateStr = formatMonthDay(dObj);  
+
+    const sub = chip.querySelector(".day-chip-sub");  
+    if (sub) sub.textContent = dateStr;  
+
+    if (sec) {  
+      const hintDateSpan = sec.querySelector(".day-hint span[contenteditable]");  
+      if (hintDateSpan) hintDateSpan.textContent = dateStr;  
+    }  
+  }  
+});
+
+}
+
+// ========= 上方日期 chip：點擊＋拖拉 =========
+function attachDayChipHandlers(chip) {
+chip.draggable = true;
+
+chip.addEventListener("click", () => {  
+  document.querySelectorAll(".day-chip").forEach(c => c.classList.remove("active"));  
+  chip.classList.add("active");  
+  const id = chip.dataset.id;  
+  const sec = document.querySelector('.day-section[data-id="' + id + '"]');  
+  if (sec) {  
+    sec.scrollIntoView({ behavior: "smooth", block: "start" });  
+  }  
+});  
+
+chip.addEventListener("dragstart", e => {  
+  draggingChip = chip;  
+  chip.classList.add("dragging");  
+  e.dataTransfer.effectAllowed = "move";  
+});  
+
+chip.addEventListener("dragend", () => {  
+  if (!draggingChip) return;  
+  draggingChip.classList.remove("dragging");  
+  draggingChip = null;  
+  syncSectionsToChipOrder();  
+  updateDayNumbersAndDates();  
+  scheduleSave();  
+});
+
+}
+
+function setupDayNavDrag() {
+const nav = document.getElementById("dayNav");
+if (!nav) return;
+
+nav.addEventListener("dragover", e => {  
+  if (!draggingChip) return;  
+  e.preventDefault();  
+  const after = getDayChipAfter(nav, e.clientX);  
+  if (after == null) {  
+    nav.appendChild(draggingChip);  
+  } else {  
+    nav.insertBefore(draggingChip, after);  
+  }  
+});
+
+}
+
+function getDayChipAfter(container, x) {
+const chips = [...container.querySelectorAll(".day-chip:not(.dragging)")];
+let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+chips.forEach(chip => {
+const box = chip.getBoundingClientRect();
+const offset = x - (box.left + box.width / 2);
+if (offset < 0 && offset > closest.offset) {
+closest = { offset, element: chip };
+}
+});
+return closest.element;
+}
+
+function syncSectionsToChipOrder() {
+const chips = Array.from(document.querySelectorAll(".day-chip"));
+const sections = Array.from(document.querySelectorAll(".day-section"));
+const root = document.getElementById("pageRoot");
+const map = {};
+sections.forEach(sec => { map[sec.dataset.id] = sec; });
+
+chips.forEach(chip => {  
+  const sec = map[chip.dataset.id];  
+  if (sec) root.appendChild(sec);  
+});
+
+}
+
+// ========= 一天裡的欄位拖拉 =========
+function makeDayItemDraggable(el) {
+if (!el) return;
+el.draggable = true;
+el.classList.add("day-item");
+
+el.addEventListener("dragstart", e => {  
+  draggingItem = el;  
+  el.classList.add("dragging");  
+  e.dataTransfer.effectAllowed = "move";  
+});  
+
+el.addEventListener("dragend", () => {  
+  if (!draggingItem) return;  
+  draggingItem.classList.remove("dragging");  
+  draggingItem = null;  
+  scheduleSave();  
+});
+
+}
+
+function setupDayItemDropZones() {
+const dayCards = document.querySelectorAll(".day-card");
+dayCards.forEach(card => {
+card.addEventListener("dragover", e => {
+if (!draggingItem) return;
+e.preventDefault();
+const after = getDayItemAfter(card, e.clientY);
+if (after == null) {
+const addRow = card.querySelector(".add-spot-card");
+if (addRow) {
+card.insertBefore(draggingItem, addRow);
+} else {
+card.appendChild(draggingItem);
+}
+} else {
+card.insertBefore(draggingItem, after);
+}
+});
+});
+}
+
+function getDayItemAfter(container, y) {
+const items = [...container.querySelectorAll(".day-item:not(.dragging)")];
+let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+items.forEach(item => {
+const box = item.getBoundingClientRect();
+const offset = y - (box.top + box.height / 2);
+if (offset < 0 && offset > closest.offset) {
+closest = { offset, element: item };
+}
+});
+return closest.element;
+}
+
+// ========= 新增／刪除一天 =========
+function addDay() {
+saveSnapshot();
+
+const nav = document.getElementById("dayNav");  
+const chips = Array.from(nav.querySelectorAll(".day-chip"));  
+const sections = Array.from(document.querySelectorAll(".day-section"));  
+const lastSection = sections[sections.length - 1];  
+
+const newId = "day-" + Date.now();  
+const newIndex = chips.length + 1;  
+
+let baseDate = new Date(2026, 4, 8);  
+if (chips.length > 0) {  
+  const lastChipSub = chips[chips.length - 1].querySelector(".day-chip-sub");  
+  if (lastChipSub) {  
+    const md = parseMonthDay(lastChipSub.textContent);  
+    if (md) {  
+      baseDate = new Date(2026, md.month - 1, md.day);  
+      baseDate.setDate(baseDate.getDate() + 1);  
+    }  
+  }  
+}  
+const dateStr = formatMonthDay(baseDate);  
+
+const chip = document.createElement("div");  
+chip.className = "day-chip";  
+chip.dataset.id = newId;  
+chip.innerHTML = `  
+  <span class="day-chip-main" contenteditable="true">Day ${newIndex}</span>  
+  <span class="day-chip-sub" contenteditable="true">${dateStr}</span>  
+`;  
+nav.appendChild(chip);  
+attachDayChipHandlers(chip);  
+
+const sec = document.createElement("section");  
+sec.className = "day-section";  
+sec.dataset.id = newId;  
+sec.innerHTML = `  
+  <div class="day-card">  
+    <div class="day-header">  
+      <div class="day-header-main">  
+        <span contenteditable="true">Day ${newIndex}</span>  
+      </div>  
+      <div class="day-header-sub">  
+        <span contenteditable="true">（新的一天行程）</span>  
+      </div>  
+    </div>  
+    <div class="day-hint">  
+      日期：<span contenteditable="true">${dateStr}</span>  
+    </div>  
+    <article class="spot-card">  
+      <div class="spot-title" contenteditable="true">新行程</div>  
+      <div class="spot-name-ja" contenteditable="true">日文名稱或地址</div>  
+      <div class="spot-meta" contenteditable="true">可以在這裡寫簡短說明。</div>  
+      <div class="btn-row-spot">  
+        <button class="btn small" type="button">地圖預覽</button>  
+        <button class="btn small" type="button">在地圖上搜尋</button>  
+        <button class="btn small" type="button">從飯店導航</button>  
+        <button class="btn small" type="button">📷 新增圖片</button>  
+      </div>  
+      <div class="spot-note">  
+        <div class="spot-note-title"><span>備註</span></div>  
+        <div class="spot-note-body" contenteditable="true"></div>  
+      </div>  
+    </article>  
+    <div class="add-spot-card">  
+      <button type="button" class="btn small add-spot-btn">＋ 新增行程卡片</button>  
+    </div>  
+    <div class="day-note-card">  
+      <div class="day-note-header">  
+        <div class="day-note-title">當日備註／花費</div>  
+        <button class="day-note-photo-btn" type="button">📷 新增圖片</button>  
+      </div>  
+      <div class="day-note-box day-note-body" contenteditable="true"></div>  
+      <div class="day-note-photos"></div>  
+    </div>  
+  </div>  
+`;  
+if (lastSection) {  
+  lastSection.after(sec);  
+} else {  
+  const pageRoot = document.getElementById("pageRoot");  
+  pageRoot.appendChild(sec);  
+}  
+
+makeDayItemDraggable(sec.querySelector(".spot-card"));  
+makeDayItemDraggable(sec.querySelector(".day-note-card"));  
+attachAddSpotButtons(sec);  
+enhanceSpotCardsForCopy(sec);  
+setupDayItemDropZones();  
+updateDayNumbersAndDates();  
+scheduleSave();
+
+}
+
+function removeLastDay() {
+const sections = Array.from(document.querySelectorAll(".day-section"));
+if (sections.length <= 1) return;
+saveSnapshot();
+
+const lastSection = sections[sections.length - 1];  
+const id = lastSection.dataset.id;  
+
+const chip = document.querySelector('.day-chip[data-id="' + id + '"]');  
+if (chip) chip.remove();  
+lastSection.remove();  
+
+updateDayNumbersAndDates();  
+scheduleSave();
+
+}
+
+// ========= 新增行程卡片 =========
+function attachAddSpotButtons(root) {
+const buttons = root.querySelectorAll(".add-spot-btn");
+buttons.forEach(btn => {
+btn.onclick = () => {
+saveSnapshot();
+
+const dayCard = btn.closest(".day-card");  
+    if (!dayCard) return;  
+
+    const newCard = document.createElement("article");  
+    newCard.className = "spot-card";  
+    newCard.innerHTML = `  
+      <div class="spot-title" contenteditable="true">新行程</div>  
+      <div class="spot-name-ja" contenteditable="true">日文名稱或地址</div>  
+      <div class="spot-meta" contenteditable="true">可以在這裡寫簡短說明。</div>  
+      <div class="btn-row-spot">  
+        <button class="btn small" type="button">地圖預覽</button>  
+        <button class="btn small" type="button">在地圖上搜尋</button>  
+        <button class="btn small" type="button">從飯店導航</button>  
+        <button class="btn small" type="button">📷 新增圖片</button>  
+      </div>  
+      <div class="spot-note">  
+        <div class="spot-note-title"><span>備註</span></div>  
+        <div class="spot-note-body" contenteditable="true"></div>  
+      </div>  
+    `;  
+    const addRow = btn.closest(".add-spot-card");  
+    dayCard.insertBefore(newCard, addRow);  
+
+    makeDayItemDraggable(newCard);  
+    enhanceSpotCardsForCopy(dayCard);  
+    setupDayItemDropZones();  
+    newCard.querySelectorAll("[contenteditable]").forEach(el => {  
+      el.addEventListener("input", scheduleSave);  
+    });  
+    scheduleSave();  
+  };  
+});
+
+}
+
+// ========= 匯出／匯入 JSON =========
+function exportJson() {
+const root = document.getElementById("pageRoot");
+if (!root) return;
+const data = {
+savedAt: new Date().toISOString(),
+html: root.innerHTML
+};
+const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+const url = URL.createObjectURL(blob);
+const a = document.createElement("a");
+a.href = url;
+a.download = "NijiTrip_backup.json";
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
+}
+
+function importJson(file) {
+if (!file) return;
+const reader = new FileReader();
+reader.onload = e => {
+try {
+const data = JSON.parse(e.target.result);
+if (data && data.html) {
+saveSnapshot();
+restoreSnapshot(data.html);
+}
+} catch (err) {
+alert("匯入失敗，檔案格式不正確。");
+}
+};
+reader.readAsText(file, "utf-8");
+}
+
+// ========= 圖片：input & 點擊刪除 =========
+function ensurePhotoInput() {
+if (photoInput) return;
+photoInput = document.createElement("input");
+photoInput.type = "file";
+photoInput.accept = "image/*";
+photoInput.style.display = "none";
+document.body.appendChild(photoInput);
+
+photoInput.addEventListener("change", () => {  
+  const file = photoInput.files && photoInput.files[0];  
+  if (!file || !currentPhotoTarget) return;  
+
+  const reader = new FileReader();  
+  reader.onload = e => {  
+    const url = e.target.result;  
+    const img = document.createElement("img");  
+    img.src = url;  
+    img.alt = "行程照片";  
+    img.style.width = "70px";  
+    img.style.height = "70px";  
+    img.style.objectFit = "cover";  
+    img.style.borderRadius = "10px";  
+    img.style.marginRight = "4px";  
+    img.style.marginTop = "4px";  
+    currentPhotoTarget.appendChild(img);  
+
+    // 點一下直接刪除（不再跳出確認）  
+    img.addEventListener("click", () => {  
+      img.remove();  
+      scheduleSave();  
+    });  
+
+    scheduleSave();  
+  };  
+  reader.readAsDataURL(file);  
+  photoInput.value = "";  
+});
+
+}
+
+// ========= 行程卡片加上「複製此卡片」按鈕 =========
+function enhanceSpotCardsForCopy(root) {
+const container = root || document;
+const cards = container.querySelectorAll(".spot-card");
+cards.forEach(card => {
+const row = card.querySelector(".btn-row-spot");
+if (!row) return;
+if (row.querySelector(".copy-spot-btn")) return;
+
+const btn = document.createElement("button");  
+  btn.type = "button";  
+  btn.className = "btn small copy-spot-btn";  
+  btn.textContent = "複製此卡片";  
+  row.appendChild(btn);  
+});
+
+}
+
+// ========= 行程卡片裡的按鈕功能 =========
+function setupButtonActions() {
+if (buttonsBound) return;
+buttonsBound = true;
+
+document.addEventListener("click", e => {  
+  const btn = e.target.closest("button");  
+  if (!btn) return;  
+
+  const text = btn.textContent.trim();  
+
+  // 當日備註／花費 的圖片按鈕  
+  if (btn.classList.contains("day-note-photo-btn")) {  
+    ensurePhotoInput();  
+    const dayCard = btn.closest(".day-card");  
+    if (!dayCard) return;  
+    const container = dayCard.querySelector(".day-note-photos") ||  
+                      dayCard.querySelector(".day-note-box") ||  
+                      dayCard;  
+    currentPhotoTarget = container;  
+    photoInput.click();  
+    return;  
+  }  
+
+  // 行程卡片上的按鈕  
+  if (btn.closest(".btn-row-spot")) {  
+    const card = btn.closest(".spot-card");  
+    if (!card) return;  
+
+    // 先處理「複製此卡片」  
+    if (btn.classList.contains("copy-spot-btn") || text.includes("複製此卡片")) {  
+      saveSnapshot();  
+      const clone = card.cloneNode(true);  
+      card.after(clone);  
+
+      makeDayItemDraggable(clone);  
+      enhanceSpotCardsForCopy(card.closest(".day-card") || document);  
+
+      // 讓複製出來的 contenteditable 也會自動存檔  
+      clone.querySelectorAll("[contenteditable]").forEach(el => {  
+        el.addEventListener("input", scheduleSave);  
+      });  
+
+      scheduleSave();  
+      return;  
+    }  
+
+    const jpEl = card.querySelector(".spot-name-ja");  
+    const zhEl = card.querySelector(".spot-title");  
+    const dest = (jpEl && jpEl.textContent.trim()) ||  
+                 (zhEl && zhEl.textContent.trim()) || "";  
+
+    if (text.includes("📷") || text.includes("新增圖片")) {  
+      ensurePhotoInput();  
+      const note = card.querySelector(".spot-note") || card;  
+      currentPhotoTarget = note;  
+      photoInput.click();  
+      return;  
+    }  
+
+    if (!dest) {  
+      alert("請先在行程卡片裡填寫地點名稱（尤其是日文名稱或地址）");  
+      return;  
+    }  
+
+    if (text.includes("地圖預覽") || text.includes("在地圖上搜尋")) {  
+      const url = "https://www.google.com/maps/search/?api=1&query=" +  
+                  encodeURIComponent(dest);  
+      window.open(url, "_blank");  
+      return;  
+    }  
+
+    if (text.includes("從飯店導航")) {  
+      const url =  
+        "https://www.google.com/maps/dir/?api=1" +  
+        "&origin=" + encodeURIComponent(HOTEL_NAME) +  
+        "&destination=" + encodeURIComponent(dest);  
+      window.open(url, "_blank");  
+      return;  
+    }  
+  }  
+});
+
+}
+
+// ========= 綁定所有事件 =========
+function attachAllHandlers() {
+document.querySelectorAll("[contenteditable]").forEach(el => {
+el.removeEventListener("input", scheduleSave);
+el.addEventListener("input", scheduleSave);
+});
+
+document.querySelectorAll(".day-chip").forEach(attachDayChipHandlers);  
+setupDayNavDrag();  
+
+document.querySelectorAll(".spot-card").forEach(makeDayItemDraggable);  
+document.querySelectorAll(".day-note-card").forEach(makeDayItemDraggable);  
+setupDayItemDropZones();  
+
+attachAddSpotButtons(document);  
+enhanceSpotCardsForCopy(document);  
+setupButtonActions();  
+
+const addDayBtn = document.getElementById("addDayBtn");  
+if (addDayBtn) addDayBtn.onclick = addDay;  
+
+const removeLastDayBtn = document.getElementById("removeLastDayBtn");  
+if (removeLastDayBtn) removeLastDayBtn.onclick = removeLastDay;  
+
+const undoBtn = document.getElementById("undoBtn");  
+if (undoBtn) undoBtn.onclick = undo;  
+
+const exportBtn = document.getElementById("exportBtn");  
+const importBtn = document.getElementById("importBtn");  
+const importFile = document.getElementById("importFile");  
+
+if (exportBtn) exportBtn.onclick = exportJson;  
+if (importBtn && importFile) {  
+  importBtn.onclick = () => importFile.click();  
+  importFile.onchange = () => {  
+    if (importFile.files && importFile.files[0]) {  
+      importJson(importFile.files[0]);  
+      importFile.value = "";  
+    }  
+  };  
+}  
+
+const firstDateSpan =  
+  document.querySelector('.day-section[data-id="day-1"] .day-hint span[contenteditable]') ||  
+  document.querySelector('.day-chip[data-id="day-1"] .day-chip-sub');  
+if (firstDateSpan) {  
+  firstDateSpan.addEventListener("input", () => {  
+    updateDayNumbersAndDates();  
+    scheduleSave();  
+  });  
+}  
+
+updateDayNumbersAndDates();
+
+}
+
+// ========= 初始化 =========
+document.addEventListener("DOMContentLoaded", () => {
+const root = document.getElementById("pageRoot");
+if (!root) return;
+
+try {  
+  const saved = localStorage.getItem(LOCAL_KEY);  
+  if (saved) {  
+    root.innerHTML = saved;  
+  }  
+} catch (e) {  
+  console.warn("讀取 localStorage 失敗：", e);  
+}  
+
+saveSnapshot();  
+attachAllHandlers();
+
+});
+})();
+</script>
+
+</body>  
+</html> 
