@@ -635,6 +635,7 @@
 <script>
 (function () {
   const MAX_UNDO = 10;
+  const LOCAL_KEY = "niji-trip-2026-html-v2";
   let undoStack = [];
   let saveTimer = null;
 
@@ -642,8 +643,16 @@
   function saveSnapshot() {
     const root = document.getElementById("pageRoot");
     if (!root) return;
-    undoStack.push(root.innerHTML);
+    const html = root.innerHTML;
+    // 存到 Undo 堆疊
+    undoStack.push(html);
     if (undoStack.length > MAX_UNDO) undoStack.shift();
+    // 存到 localStorage（讓重整後還在）
+    try {
+      localStorage.setItem(LOCAL_KEY, html);
+    } catch (e) {
+      console.warn("localStorage 儲存失敗：", e);
+    }
     console.log("snapshot saved, length =", undoStack.length);
   }
 
@@ -656,6 +665,11 @@
     const root = document.getElementById("pageRoot");
     if (!root) return;
     root.innerHTML = html;
+    try {
+      localStorage.setItem(LOCAL_KEY, html);
+    } catch (e) {
+      console.warn("localStorage 儲存失敗：", e);
+    }
     attachAllHandlers(); // 重新綁所有事件
   }
 
@@ -687,7 +701,6 @@
     const idToSection = {};
     sections.forEach(sec => { idToSection[sec.dataset.id] = sec; });
 
-    // 以第一顆 chip 的日期當基準
     let baseDate = null;
     if (chips.length > 0) {
       const firstSub = chips[0].querySelector(".day-chip-sub");
@@ -701,7 +714,6 @@
       const dayIndex = idx + 1;
       const id = chip.dataset.id;
 
-      // chip 上 Day N
       const main = chip.querySelector(".day-chip-main");
       if (main) {
         const txt = main.textContent.trim();
@@ -710,7 +722,6 @@
         }
       }
 
-      // 對應下方大卡片的 Day N
       const sec = idToSection[id];
       if (sec) {
         const headerMain = sec.querySelector(".day-header-main span[contenteditable]");
@@ -722,7 +733,6 @@
         }
       }
 
-      // 日期：第一天輸入，後面自動 +1
       if (baseDate) {
         const dObj = new Date(baseDate);
         dObj.setDate(dObj.getDate() + idx);
@@ -842,7 +852,6 @@
         e.preventDefault();
         const after = getDayItemAfter(card, e.clientY);
         if (after == null) {
-          // 插在新增行程按鈕前面，若沒有就放最後
           const addRow = card.querySelector(".add-spot-card");
           if (addRow) {
             card.insertBefore(draggingItem, addRow);
@@ -881,7 +890,6 @@
     const newId = "day-" + Date.now();
     const newIndex = chips.length + 1;
 
-    // 算出新日期：以上一顆 chip 的日期 +1
     let baseDate = new Date(2026, 4, 8); // fallback 5/8
     if (chips.length > 0) {
       const lastChipSub = chips[chips.length - 1].querySelector(".day-chip-sub");
@@ -956,7 +964,6 @@
       pageRoot.appendChild(sec);
     }
 
-    // 讓新的一天也有拖拉／新增卡片功能
     makeDayItemDraggable(sec.querySelector(".spot-card"));
     makeDayItemDraggable(sec.querySelector(".day-note-card"));
     attachAddSpotButtons(sec);
@@ -1045,7 +1052,7 @@
         const data = JSON.parse(e.target.result);
         if (data && data.html) {
           saveSnapshot();
-          restoreSnapshot(data.html);
+          restoreSnapshot(data.html);   // restoreSnapshot 會順便存到 localStorage
         }
       } catch (err) {
         alert("匯入失敗，檔案格式不正確。");
@@ -1056,36 +1063,29 @@
 
   // ========= 綁定所有事件 =========
   function attachAllHandlers() {
-    // 所有可編輯文字都觸發自動儲存
     document.querySelectorAll("[contenteditable]").forEach(el => {
       el.removeEventListener("input", scheduleSave);
       el.addEventListener("input", scheduleSave);
     });
 
-    // 上方 Day chips
     document.querySelectorAll(".day-chip").forEach(attachDayChipHandlers);
     setupDayNavDrag();
 
-    // 一天裡的各個欄位：行程卡片＋當日備註卡片
     document.querySelectorAll(".spot-card").forEach(makeDayItemDraggable);
     document.querySelectorAll(".day-note-card").forEach(makeDayItemDraggable);
     setupDayItemDropZones();
 
-    // 新增行程卡片按鈕
     attachAddSpotButtons(document);
 
-    // 新增一天／刪除最後一天
     const addDayBtn = document.getElementById("addDayBtn");
     if (addDayBtn) addDayBtn.onclick = addDay;
 
     const removeLastDayBtn = document.getElementById("removeLastDayBtn");
     if (removeLastDayBtn) removeLastDayBtn.onclick = removeLastDay;
 
-    // Undo
     const undoBtn = document.getElementById("undoBtn");
     if (undoBtn) undoBtn.onclick = undo;
 
-    // 匯出／匯入
     const exportBtn = document.getElementById("exportBtn");
     const importBtn = document.getElementById("importBtn");
     const importFile = document.getElementById("importFile");
@@ -1101,7 +1101,6 @@
       };
     }
 
-    // 監看 Day1 日期改動 → 自動帶到後面日期
     const firstDateSpan =
       document.querySelector('.day-section[data-id="day-1"] .day-hint span[contenteditable]') ||
       document.querySelector('.day-chip[data-id="day-1"] .day-chip-sub');
@@ -1117,11 +1116,24 @@
 
   // ========= 初始化 =========
   document.addEventListener("DOMContentLoaded", () => {
-    saveSnapshot();      // 初始狀態放進 undo
+    const root = document.getElementById("pageRoot");
+    if (!root) return;
+
+    // 先從 localStorage 還原
+    try {
+      const saved = localStorage.getItem(LOCAL_KEY);
+      if (saved) {
+        root.innerHTML = saved;
+      }
+    } catch (e) {
+      console.warn("讀取 localStorage 失敗：", e);
+    }
+
+    saveSnapshot();      // 初始狀態先丟進 undo
     attachAllHandlers(); // 綁定事件
   });
 })();
-  </script>
+      </script>
 
 </body>
 </html>
