@@ -1,150 +1,2051 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JourneyFlow | 你的智能旅遊規劃師</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        body { font-family: 'Noto+Sans+TC', sans-serif; background-color: #f8fafc; }
-        .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
-        .day-card.active { border-left: 4px solid #f97316; background: #fff7ed; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Niji Trip 2026 🌈</title>
+  <meta name="theme-color" content="#ffcf8f"/>
+
+  <style>
+    :root{
+      --bg:#fce0b3;
+      --card:#fff7e8;
+      --soft:#eaf6ff;
+      --chip:#fff6e5;
+      --chipOn:#ffffff;
+
+      --brown:#7a4a26;
+      --brown2:#a26b3a;
+      --border:rgba(186, 140, 91, 0.35);
+      --shadow:0 2px 8px rgba(0,0,0,0.08);
+
+      --r1:18px;
+      --r2:24px;
+      --pill:999px;
+
+      --btn:#ffd59a;
+      --btn2:#ffb85c;
+      --danger:#ffb0a6;
+
+      --focus: rgba(255,184,92,0.85);
+    }
+    *{box-sizing:border-box;}
+    html,body{margin:0;padding:0;font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif;background:var(--bg);color:var(--brown);}
+    body{min-height:100vh;}
+
+    .page{max-width:980px;margin:0 auto;padding:14px 12px 96px;}
+
+    header{
+      background:var(--card);
+      border-radius:26px;
+      padding:16px 14px 14px;
+      box-shadow:var(--shadow);
+      margin-bottom:12px;
+    }
+
+    .titleRow{display:flex;align-items:center;gap:10px;}
+    .titleRow h1{margin:0;font-size:26px;font-weight:1000;letter-spacing:.02em}
+    .titleRow .emoji{font-size:24px}
+
+    .desc{margin:8px 0 10px;color:var(--brown2);line-height:1.6;font-size:14px;}
+    .desc textarea{
+      width:100%;
+      border:1px dashed rgba(122,74,38,0.22);
+      background:#fffdf6;
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:14px;
+      color:var(--brown);
+      outline:none;
+      resize:vertical;
+      min-height:52px;
+    }
+    .desc textarea:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(255,184,92,.18);}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+    .btn{
+      border:none;border-radius:var(--pill);
+      padding:9px 14px;
+      font-size:14px;
+      font-weight:900;
+      background:var(--btn);
+      color:#5a351e;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .btn.primary{background:var(--btn2);}
+    .btn.danger{background:var(--danger);color:#7a221b;}
+    .btn.ghost{background:#fff3da;}
+    .btn.small{padding:7px 11px;font-size:13px;box-shadow:none;}
+    .btn:active{transform:translateY(1px); box-shadow:0 1px 3px rgba(0,0,0,.18);}
+    .btn:disabled{opacity:.6;cursor:default;transform:none;}
+
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:7px 11px;border-radius:var(--pill);
+      background:#fff3c5;border:1px solid rgba(122,74,38,0.10);
+      font-size:13px;font-weight:1000;color:#5c3a1c;
+    }
+    .badge.soft{background:#eaf6ff;}
+    .badge.ok{background:#dff7ea;}
+    .badge.warn{background:#ffb0a6;color:#7a221b;}
+    .muted{color:var(--brown2);font-size:13px;line-height:1.55;}
+
+    /* Auth */
+    .auth{
+      margin-top:10px;
+      padding:10px;
+      border-radius:18px;
+      background:#fffdf6;
+      border:1px dashed rgba(122,74,38,0.20);
+    }
+    .authGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    @media (max-width:640px){ .authGrid{grid-template-columns:1fr;} }
+
+    .inp{
+      width:100%;
+      border:none;
+      background:#fff;
+      border-radius:var(--pill);
+      padding:12px 14px;
+      font-size:14px;
+      font-weight:800;
+      color:#5a351e;
+      box-shadow:var(--shadow);
+      outline:none;
+      border:1px solid rgba(122,74,38,0.10);
+    }
+    .inp:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(255,184,92,.18), var(--shadow);}
+
+    /* Sticky Day Nav */
+    .sticky{
+      position:sticky;top:0;z-index:30;
+      padding-top:10px;
+      background:linear-gradient(to bottom, rgba(252,224,179,0.97), rgba(252,224,179,0.74), rgba(252,224,179,0));
+      backdrop-filter: blur(6px);
+    }
+    .dayNav{
+      background:var(--soft);
+      border-radius:24px;
+      padding:10px 10px;
+      display:flex;gap:10px;
+      overflow-x:auto;
+      box-shadow:var(--shadow);
+    }
+    .dayChip{
+      flex:0 0 auto;
+      min-width:92px;
+      background:var(--chip);
+      border-radius:var(--r2);
+      padding:8px 10px;
+      box-shadow:var(--shadow);
+      border:1px solid transparent;
+      cursor:pointer;
+      user-select:none;
+    }
+    .dayChip.active{background:var(--chipOn);border-color:rgba(122,74,38,0.22);}
+    .dayChip .t{font-weight:1000;font-size:15px;}
+    .dayChip .s{font-size:12px;color:var(--brown2);margin-top:2px;}
+
+    /* Day */
+    .daySection{margin-top:12px;margin-bottom:16px;}
+    .dayCard{
+      background:var(--soft);
+      border-radius:28px;
+      padding:12px 12px 14px;
+      box-shadow:var(--shadow);
+    }
+    .dayHead{
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+      padding:2px 6px 0;margin-bottom:8px;
+    }
+    .pill{
+      background:#fff;border-radius:var(--pill);
+      padding:8px 14px;
+      box-shadow:var(--shadow);
+      font-size:18px;font-weight:1000;
+      color:#5c3a1c;
+    }
+    .pill input{
+      border:none;outline:none;background:transparent;
+      font-size:18px;font-weight:1000;color:#5c3a1c;min-width:120px;
+    }
+    .sub input{
+      border:none;outline:none;background:#fff;
+      border-radius:var(--pill);
+      padding:9px 12px;
+      box-shadow:var(--shadow);
+      font-weight:800;color:var(--brown);
+      min-width:min(460px, 100%);
+      width: min(460px, 100%);
+    }
+
+    .meta{
+      display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+      padding:0 6px 8px;
+      color:var(--brown2);font-size:13px;
+    }
+    .meta .miniPill{
+      background:#fff;border-radius:var(--pill);
+      padding:7px 12px;box-shadow:var(--shadow);
+      border:1px solid rgba(122,74,38,0.10);
+      display:flex;gap:8px;align-items:center;
+    }
+    .meta .miniPill span{font-weight:1000;color:var(--brown2);font-size:12px;}
+    .meta .miniPill input{
+      width:110px;border:none;outline:none;background:transparent;
+      font-weight:1000;color:#5c3a1c;
+    }
+
+    /* Tickets */
+    .tickets{
+      background:rgba(255,255,255,0.70);
+      border-radius:16px;
+      padding:10px 10px 8px;
+      border:1px solid rgba(122,74,38,0.10);
+      margin:10px 6px 0;
+    }
+    .ticketsHead{display:flex;justify-content:space-between;gap:10px;align-items:center;font-weight:1000;color:#5c3a1c;}
+    .tickets textarea{
+      width:100%;
+      margin-top:8px;
+      border-radius:14px;
+      border:1px dashed var(--border);
+      background:#fffdf6;
+      padding:10px 10px;
+      font-size:13px;
+      outline:none;
+      resize:vertical;
+      min-height:44px;
+      color:#5c3a1c;
+    }
+    .tickets textarea:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(255,184,92,.18);}
+    .photoStrip{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+    .thumb{
+      width:66px;height:66px;border-radius:12px;object-fit:cover;
+      border:1px solid rgba(122,74,38,0.12);
+      box-shadow:var(--shadow);
+      cursor:pointer;
+    }
+    .thumb:active{transform:scale(.98);}
+
+    /* Sections (早/午/晚) */
+    .sections{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      padding:10px 6px 6px;
+    }
+    .sec{
+      background:rgba(255,255,255,0.55);
+      border-radius:18px;
+      padding:10px 10px 12px;
+      border:1px solid rgba(122,74,38,0.10);
+    }
+    .secHead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
+    .secTitle{font-weight:1000;font-size:14px;color:#5c3a1c;display:flex;align-items:center;gap:7px;}
+    .dot{width:9px;height:9px;border-radius:50%;background:#ffb85c;box-shadow:var(--shadow);}
+
+    .secActions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+    .secActions .btn{background:#ffe7bf;}
+
+    /* Card */
+    .card{
+      background:var(--card);
+      border-radius:var(--r1);
+      padding:12px 12px 10px;
+      box-shadow:var(--shadow);
+      margin:0 0 10px;
+      position:relative;
+    }
+    .cardTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+    .titleInp{width:100%;border:none;outline:none;background:#fff;border-radius:14px;
+      padding:10px 12px;font-size:15px;font-weight:1000;color:#5c3a1c;box-shadow:var(--shadow);
+      border:1px solid rgba(122,74,38,0.10);
+    }
+    .titleInp:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(255,184,92,.18), var(--shadow);}
+
+    .miniInp{
+      width:100%;border:none;outline:none;background:#fff;border-radius:14px;
+      padding:9px 12px;font-size:13px;font-weight:800;color:#5c3a1c;box-shadow:var(--shadow);
+      border:1px solid rgba(122,74,38,0.10);
+    }
+    .miniInp:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(255,184,92,.18), var(--shadow);}
+
+    .cardBtns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 8px;}
+
+    .locBox{
+      border-radius:14px;
+      border:1px dashed var(--border);
+      background:#fffdf6;
+      padding:8px 9px;
+      margin-top:8px;
+    }
+    .locLine{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:6px 0;}
+    .locLabel{font-size:12px;font-weight:1000;color:var(--brown2);width:54px;padding-top:10px;}
+
+    .vias{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+    .viaRow{display:flex;gap:8px;align-items:flex-start;}
+    .viaRow .locLabel{width:54px;}
+    .viaRow .btn{box-shadow:none;margin-top:4px;}
+
+    .note{
+      border-radius:14px;border:1px dashed var(--border);
+      background:#fffdf6;
+      padding:8px 9px;margin-top:10px;
+    }
+    .noteHead{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:1000;color:var(--brown2);font-size:12px;}
+
+    /* Day Note bottom */
+    .dayNoteCard{
+      background:var(--card);
+      border-radius:var(--r1);
+      padding:12px 12px 10px;
+      box-shadow:var(--shadow);
+      margin:12px 6px 0;
+    }
+    .dayNoteHead{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:1000;}
+    .dayNoteCard textarea{
+      width:100%;
+      margin-top:8px;
+      border-radius:14px;
+      border:1px dashed var(--border);
+      background:#fffdf6;
+      padding:10px 10px;
+      font-size:13px;
+      outline:none;
+      resize:vertical;
+      min-height:54px;
+      color:#5c3a1c;
+    }
+    .dayNoteCard textarea:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(255,184,92,.18);}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;padding:16px;}
+    .modal.show{display:flex;}
+    .modalCard{width:min(900px,100%);height:min(560px,80vh);background:#fff;border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.22);overflow:hidden;display:flex;flex-direction:column;}
+    .modalBar{padding:10px 12px;background:#fff3da;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+    .modalBar .t{font-weight:1000;color:#5c3a1c;}
+    .modalBody{flex:1;}
+    .modalBody iframe{width:100%;height:100%;border:0;}
+
+    /* Floating */
+    .floating{position:fixed;right:10px;bottom:12px;z-index:60;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+    .fab{border:none;border-radius:999px;padding:10px 12px;background:#ffcf8f;box-shadow:var(--shadow);font-weight:1000;cursor:pointer;}
+    .fab:disabled{opacity:.55;cursor:default;}
+    .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:70;background:rgba(90,53,30,0.92);color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;opacity:0;transition:opacity .2s ease;pointer-events:none;}
+    .toast.show{opacity:1;}
+
+    /* Context menu */
+    .menu{
+      position:fixed;z-index:120;min-width:220px;background:#fff;border-radius:16px;
+      box-shadow:0 12px 30px rgba(0,0,0,.22);padding:8px;display:none;
+    }
+    .menu.show{display:block;}
+    .menu .mTitle{font-size:12px;color:var(--brown2);padding:6px 8px 4px;font-weight:1000;}
+    .menu button{
+      width:100%;text-align:left;border:none;border-radius:12px;padding:10px 10px;
+      background:#fff3da;font-weight:1000;color:#5c3a1c;cursor:pointer;margin:4px 0;
+    }
+    .menu button.danger{background:#ffb0a6;color:#7a221b;}
+    .menu button.secondary{background:#eaf6ff;}
+
+    /* Search */
+    .search{
+      margin-top:10px;padding-top:10px;border-top:1px dashed rgba(122,74,38,0.20);
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    }
+    .search input{flex:1 1 220px;}
+
+    /* ======= Auto-grow textareas that look like inputs ======= */
+    .taLikeInp{
+      width:100%;
+      border:none;
+      outline:none;
+      background:#fff3da;
+      border-radius:999px;
+      padding:10px 12px;
+      font-weight:900;
+      color:#5a351e;
+      border:1px solid rgba(122,74,38,0.10);
+      resize:none;
+      overflow:hidden;
+      line-height:1.35;
+      min-height:42px;
+    }
+    .taLikeInp:focus{border-color:var(--focus); box-shadow:0 0 0 3px rgba(255,184,92,.18);}
+
+    .taBox{
+      width:100%;
+      border-radius:14px;
+      border:1px dashed var(--border);
+      background:#fffdf6;
+      padding:10px 10px;
+    }
+
+    /* note box: keep photos INSIDE the same dashed area */
+    .noteInner{
+      border-radius:14px;
+      border:1px dashed rgba(122,74,38,0.18);
+      background:#fff;
+      padding:10px;
+      margin-top:8px;
+    }
+    .noteInner textarea{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      resize:none;
+      overflow:hidden;
+      min-height:44px;
+      line-height:1.5;
+      font-size:13px;
+      color:#5c3a1c;
+    }
+    .noteInner:focus-within{
+      border-color:var(--focus);
+      box-shadow:0 0 0 3px rgba(255,184,92,.18);
+    }
+
+    /* clickable tag */
+    .tagBtn{
+      font-size:12px;
+      font-weight:1000;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#fff3da;
+      border:1px solid rgba(122,74,38,0.10);
+      color:#5c3a1c;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .tagBtn:active{transform:translateY(1px);}
+  </style>
 </head>
+
 <body>
-    <div id="app" class="min-h-screen flex flex-col">
-        <nav class="glass-nav sticky top-0 z-50 border-b border-slate-200 px-6 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="bg-orange-500 p-2 rounded-lg text-white">
-                    <i class="fas fa-map-marked-alt"></i>
-                </div>
-                <span class="text-xl font-bold tracking-tight">JourneyFlow</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <button class="text-slate-600 hover:text-orange-500 font-medium">我的行程</button>
-                <button class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-orange-600 transition">發布計畫</button>
-            </div>
-        </nav>
+  <div class="page" id="appRoot">
+    <header>
+      <div class="titleRow">
+        <h1 id="appTitleText">Niji Trip 2026</h1>
+        <span class="emoji">🌈</span>
+      </div>
 
-        <main class="flex-1 flex overflow-hidden">
-            <aside class="w-24 bg-white border-r border-slate-200 flex flex-col items-center py-6 gap-6">
-                <div v-for="n in 5" :key="n" 
-                     @click="activeDay = n"
-                     :class="['group cursor-pointer flex flex-col items-center transition-all', activeDay === n ? 'text-orange-500' : 'text-slate-400 hover:text-slate-600']">
-                    <div :class="['w-12 h-12 rounded-2xl flex items-center justify-center mb-1 border-2 transition-all', activeDay === n ? 'bg-orange-50 border-orange-500 shadow-sm' : 'border-transparent bg-slate-50 group-hover:bg-slate-100']">
-                        <span class="font-bold text-lg">{{ n }}</span>
-                    </div>
-                    <span class="text-[10px] font-bold uppercase tracking-widest">Day</span>
-                </div>
-                <button class="w-10 h-10 rounded-full border-2 border-dashed border-slate-300 text-slate-400 hover:border-orange-400 hover:text-orange-400 transition">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </aside>
+      <div class="desc">
+        <textarea id="appDesc" placeholder="行程描述（可自由編輯）"></textarea>
+      </div>
 
-            <section class="flex-1 overflow-y-auto bg-slate-50 p-8">
-                <div class="max-w-3xl mx-auto">
-                    <div class="mb-10 flex justify-between items-start">
-                        <div>
-                            <span class="text-orange-500 font-bold text-sm tracking-widest uppercase mb-2 block">日本．東京之旅</span>
-                            <h2 class="text-4xl font-extrabold text-slate-800 mb-2">東京櫻花季：5 日夢幻行</h2>
-                            <p class="text-slate-500 flex items-center gap-2 text-sm">
-                                <i class="far fa-calendar-alt"></i> 2026年 4月 1日 — 4月 5日
-                                <span class="mx-2">|</span>
-                                <i class="fas fa-user-friends"></i> 3 人同行
-                            </p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"><i class="fas fa-share-alt"></i></button>
-                            <button class="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"><i class="fas fa-cog"></i></button>
-                        </div>
-                    </div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn" id="btnAddDay" type="button">＋ 新增一天</button>
+        <button class="btn danger" id="btnRemoveDay" type="button">－ 刪除最後一天</button>
+        <button class="btn" id="btnExport" type="button">匯出備份（JSON）</button>
+        <button class="btn" id="btnImport" type="button">匯入備份</button>
+        <button class="btn ghost" id="btnClear" type="button">清除本機資料</button>
+        <button class="btn ghost" id="btnCloudPull" type="button" disabled>從雲端覆蓋載入</button>
+        <button class="btn ghost" id="btnCloudPush" type="button" disabled>把本機推到雲端</button>
+        <span class="badge soft" id="syncBadge">離線可用：已自動保存</span>
+      </div>
 
-                    <div class="relative space-y-6">
-                        <div class="absolute left-6 top-4 bottom-4 w-0.5 bg-slate-200"></div>
+      <div class="search">
+        <input class="inp" id="searchInput" placeholder="🔎 搜尋：標題/地址/備註/票券文字（按 Enter）" />
+        <button class="btn" id="btnSearch" type="button">搜尋</button>
+        <span class="badge soft" id="searchResult">尚未搜尋</span>
+      </div>
 
-                        <div v-for="(item, index) in filteredItinerary" :key="index" class="relative pl-14 group">
-                            <div class="absolute left-4 top-6 w-4 h-4 rounded-full bg-white border-4 border-orange-500 z-10"></div>
-                            
-                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group-hover:border-orange-200">
-                                <div class="flex justify-between mb-3">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-xs font-black bg-slate-100 text-slate-600 px-2 py-1 rounded">{{ item.time }}</span>
-                                        <h3 class="font-bold text-slate-800 text-lg">{{ item.title }}</h3>
-                                    </div>
-                                    <span :class="['text-[10px] px-2 py-1 rounded-full font-bold uppercase', item.colorClass]">
-                                        {{ item.category }}
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2 text-slate-500 text-sm mb-3">
-                                    <i class="fas fa-map-marker-alt text-orange-400"></i>
-                                    <span>{{ item.location }}</span>
-                                </div>
-                                <p class="text-slate-400 text-sm leading-relaxed">{{ item.note }}</p>
-                            </div>
-                        </div>
+      <div class="auth">
+        <div class="row" style="justify-content:space-between;">
+          <span class="badge soft" id="authStatus">尚未登入（可離線使用）</span>
+          <span class="badge soft" id="cloudStatus">雲端：未連線</span>
+        </div>
 
-                        <div class="pl-14 pt-4">
-                            <button class="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 font-medium hover:border-orange-400 hover:text-orange-500 hover:bg-white transition-all flex items-center justify-center gap-2">
-                                <i class="fas fa-plus-circle"></i> 加入 Day {{ activeDay }} 的新景點
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+        <div class="authGrid" style="margin-top:10px;">
+          <input class="inp" id="email" placeholder="Email（登入/註冊）" autocomplete="email" />
+          <input class="inp" id="password" placeholder="Password" type="password" autocomplete="current-password" />
+        </div>
 
-            <aside class="w-80 bg-white border-l border-slate-200 p-6 hidden xl:block">
-                <div class="mb-8">
-                    <h4 class="font-bold text-slate-800 mb-4">預算分配</h4>
-                    <div class="space-y-4">
-                        <div v-for="b in budget" class="space-y-1">
-                            <div class="flex justify-between text-xs font-medium">
-                                <span class="text-slate-500">{{ b.label }}</span>
-                                <span class="text-slate-800">NT$ {{ b.amount }}</span>
-                            </div>
-                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div :class="['h-full transition-all duration-500', b.color]" :style="{width: b.percent + '%'}"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary" id="btnEmailSignIn" type="button">Email 登入</button>
+          <button class="btn" id="btnEmailSignUp" type="button">註冊帳號</button>
+          <button class="btn danger" id="btnSignOut" type="button" disabled>登出</button>
+          <span class="muted" id="authHint">提示：登入後可跨裝置同步（打字不會被雲端儲存打斷）。</span>
+        </div>
+      </div>
 
-                <div class="bg-orange-50 rounded-2xl p-5 border border-orange-100">
-                    <h4 class="font-bold text-orange-800 mb-2 leading-tight">需要幫忙嗎？</h4>
-                    <p class="text-orange-700 text-xs mb-4 opacity-80">AI 助理可以根據您的喜好自動優化路線。</p>
-                    <button class="w-full bg-orange-500 text-white py-2 rounded-xl text-xs font-bold shadow-lg shadow-orange-200 hover:bg-orange-600">啟動 AI 優化</button>
-                </div>
-            </aside>
-        </main>
+      <div class="muted" style="margin-top:10px;">
+        ✅ 新增「交通/購物」不跳新卡片：都在同一張行程卡內完成。<br>
+        ✅ 標籤可切換（景點/餐廳/交通/購物）。<br>
+        ✅ 出發/目的/途經/交通路線/備註：會自動長高；備註圖片放在備註框內。<br>
+        ✅ 長按卡片可刪除/複製/置頂/移動/上移下移；住宿卡固定不可刪。<br>
+        ✅ 離線自動保存 + 雲端同步（不搶焦點）。<br>
+      </div>
+    </header>
+
+    <div class="sticky">
+      <div class="dayNav" id="dayNav"></div>
     </div>
 
-    <script>
-        const { createApp, ref, computed } = Vue;
-        createApp({
-            setup() {
-                const activeDay = ref(1);
-                const itineraryData = [
-                    { day: 1, time: '10:00', title: '抵達東京成田機場', location: 'Narita Airport', category: '交通', note: '領取 JR Pass 並購買 Skyliner 票券', colorClass: 'bg-blue-100 text-blue-600' },
-                    { day: 1, time: '14:00', title: '新宿格拉斯麗飯店', location: 'Shinjuku', category: '住宿', note: '辦理入往，看著名的哥吉拉頭像', colorClass: 'bg-purple-100 text-purple-600' },
-                    { day: 1, time: '18:00', title: '新宿御苑夜櫻', location: 'Shinjuku Gyoen', category: '景點', note: '夜間特別開放，需提前購票', colorClass: 'bg-pink-100 text-pink-600' },
-                    { day: 2, time: '09:00', title: '築地場外市場', location: 'Tsukiji', category: '美食', note: '推薦壽司大或大和壽司', colorClass: 'bg-orange-100 text-orange-600' }
-                ];
+    <div id="daysContainer"></div>
+  </div>
 
-                const filteredItinerary = computed(() => {
-                    return itineraryData.filter(item => item.day === activeDay.value);
-                });
+  <!-- modal -->
+  <div class="modal" id="mapModal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalBar">
+        <div class="t" id="modalTitle">地圖預覽</div>
+        <button class="btn" id="btnCloseModal" type="button">關閉</button>
+      </div>
+      <div class="modalBody">
+        <iframe id="modalFrame" title="map"></iframe>
+      </div>
+    </div>
+  </div>
 
-                const budget = [
-                    { label: '交通費', amount: '12,500', percent: 65, color: 'bg-blue-500' },
-                    { label: '住宿費', amount: '18,000', percent: 80, color: 'bg-purple-500' },
-                    { label: '美食娛樂', amount: '9,000', percent: 40, color: 'bg-pink-500' }
-                ];
+  <!-- context menu -->
+  <div class="menu" id="ctxMenu">
+    <div class="mTitle" id="ctxTitle">卡片操作</div>
+    <button id="mUp" class="secondary" type="button">⬆ 上移</button>
+    <button id="mDown" class="secondary" type="button">⬇ 下移</button>
+    <button id="mCopy" type="button">📄 複製此卡片</button>
+    <button id="mPin" type="button">📌 置頂（本分區）</button>
+    <button id="mMove" type="button">➡️ 移到其他天/分區…</button>
+    <button id="mDelete" class="danger" type="button">🗑️ 刪除</button>
+  </div>
 
-                return { activeDay, filteredItinerary, budget };
-            }
-        }).mount('#app');
-    </script>
+  <!-- floating -->
+  <div class="floating">
+    <button class="fab" id="btnUndo" type="button" disabled>↩ Undo</button>
+    <button class="fab" id="btnJumpActive" type="button">⬆ 回到目前 Day</button>
+  </div>
+  <div class="toast" id="saveToast">已儲存</div>
+
+  <input type="file" id="importFile" accept="application/json" style="display:none" />
+  <input type="file" id="photoPicker" accept="image/*" style="display:none" />
+
+<script>
+(() => {
+  /* =========================
+     Config
+  ========================== */
+  const STORAGE_KEY = "niji_trip_2026_A_full";
+  const UNDO_LIMIT = 10;
+  const TRIP_ID = "main";
+
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  /* =========================
+     UI helpers
+  ========================== */
+  function toast(msg="已儲存"){
+    const t = $("#saveToast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"), 650);
+  }
+  function setSyncBadge(text){ $("#syncBadge").textContent = text; }
+  function setCloudStatus(text, kind="soft"){
+    const el = $("#cloudStatus");
+    el.textContent = text;
+    el.classList.remove("ok","warn","soft");
+    el.classList.add(kind);
+  }
+  function setAuthStatus(text){ $("#authStatus").textContent = text; }
+
+  /* =========================
+     Prevent cloud snapshot stealing focus while typing
+  ========================== */
+  const CLIENT_ID = (() => {
+    const k = "niji_client_id";
+    const v = localStorage.getItem(k) || ("c_" + Math.random().toString(16).slice(2));
+    localStorage.setItem(k, v);
+    return v;
+  })();
+
+  let isUserTyping = false;
+  let pendingRemote = null;
+
+  function markTyping(){
+    isUserTyping = true;
+    clearTimeout(markTyping._t);
+    markTyping._t = setTimeout(()=>isUserTyping=false, 900);
+  }
+
+  document.addEventListener("input", (e)=>{
+    const t = e.target;
+    if (t && (t.tagName==="INPUT" || t.tagName==="TEXTAREA")) markTyping();
+  }, true);
+
+  /* =========================
+     Auto-grow helpers
+  ========================== */
+  function autoGrow(el){
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 520) + "px";
+  }
+  function bindAutoGrow(el){
+    if (!el) return;
+    const run = ()=>autoGrow(el);
+    el.addEventListener("input", run);
+    requestAnimationFrame(run);
+  }
+
+  /* =========================
+     State
+  ========================== */
+  let state = null;
+  let undoStack = [];
+  let activeDayId = null;
+
+  function defaultState(){
+    return {
+      settings:{
+        year: 2026,
+        rate: 0.22,
+        hotelName: "VESSEL INN 上野入谷站 飯店",
+        hotelNameJP: "ベッセルイン上野入谷駅前",
+      },
+      appTitle: "Niji Trip 2026",
+      appDesc: "東京行程・暖色主題。支援拖拉排序、卡片模板、多地點路線、一鍵導航、圖片/票券收納、日幣換算、預算提醒、搜尋、Undo（10步）。",
+      days: []
+    };
+  }
+
+  function newCard(type="spot"){
+    return {
+      id: `c_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      type, // spot/restaurant/transport/shopping/lodging
+      title: type==="lodging" ? `住宿：${state?.settings?.hotelName||"住宿"}`
+            : type==="restaurant" ? "新餐廳"
+            : type==="transport" ? "新交通"
+            : type==="shopping" ? "新購物"
+            : "新景點",
+      ja: "",
+      meta: "",
+      origin: "",
+      destination: "",
+      vias: [],
+      routeText: "",        // ★ 標記3：交通路線大欄位
+      note: "",
+      photos: [],
+      jpy: "",
+      twd: "",
+      pinned: (type==="lodging")
+    };
+  }
+
+  function newDay(i){
+    const d = {
+      id: `d_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      autoDayLabel: true,
+      dayLabel: `Day ${i}`,
+      subtitle: i===1 ? "（範例）成田機場・入住上野" : "（可編輯：今天主題）",
+      dateText: i===1 ? "5/8" : "",
+      budgetJPY: "",
+      tickets: { text:"", photos:[] },
+      sections: { morning:[], afternoon:[], night:[] },
+      dayNote: { text:"", photos:[] }
+    };
+    // fixed lodging in night
+    const lod = newCard("lodging");
+    lod.meta = "住宿地點（固定在當日備註上方）";
+    d.sections.night.push(lod);
+    return d;
+  }
+
+  /* =========================
+     Local Storage + Undo
+  ========================== */
+  function pushUndo(){
+    const snap = JSON.stringify(state);
+    undoStack.push(snap);
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    $("#btnUndo").disabled = undoStack.length <= 1;
+  }
+
+  function loadLocal(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+
+  function saveLocal(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch(e){ console.warn("local save failed", e); }
+  }
+
+  function clearLocal(){ localStorage.removeItem(STORAGE_KEY); }
+
+  /* =========================
+     Date helpers
+  ========================== */
+  function parseMD(s){
+    const m = String(s||"").match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+    if (!m) return null;
+    const mm = parseInt(m[1],10), dd = parseInt(m[2],10);
+    if (!mm || !dd) return null;
+    return { mm, dd };
+  }
+  function toMD(dateObj){
+    const mm = dateObj.getMonth()+1;
+    const dd = dateObj.getDate();
+    return `${mm}/${dd}`;
+  }
+  function ensureDatesFromDay1(){
+    if (!state.days?.length) return;
+    const first = state.days[0];
+    const md = parseMD(first.dateText);
+    let base = md ? new Date(state.settings.year, md.mm-1, md.dd) : new Date(state.settings.year, 4, 8);
+    state.days.forEach((d, idx) => {
+      const dt = new Date(base);
+      dt.setDate(dt.getDate() + idx);
+      d.dateText = toMD(dt);
+      if (d.autoDayLabel) d.dayLabel = `Day ${idx+1}`;
+    });
+  }
+
+  /* =========================
+     Cloud (Firebase adapter injected later)
+  ========================== */
+  let cloud = { user:null, uid:null, unsub:null, autoLoaded:false };
+
+  function canCloud(){ return !!window.CloudSync && !!cloud.uid; }
+
+  async function cloudLoad(overwrite=true){
+    if (!canCloud()) return false;
+    try{
+      setCloudStatus("雲端：載入中…", "soft");
+      const remote = await window.CloudSync.load(cloud.uid, TRIP_ID);
+      if (remote && typeof remote === "object"){
+        if (overwrite){
+          state = remote;
+          normalizeState();
+          pushUndo();
+          saveLocal();
+          render(true);
+          toast("已從雲端載入");
+        }
+        setCloudStatus("雲端：已連線 ✅", "ok");
+        return true;
+      }else{
+        setCloudStatus("雲端：尚無資料", "soft");
+        return false;
+      }
+    }catch(e){
+      console.warn("cloud load failed", e);
+      setCloudStatus("雲端：載入失敗 ❌", "warn");
+      return false;
+    }
+  }
+
+  async function cloudSave(){
+    if (!canCloud()) return;
+    try{
+      await window.CloudSync.save(cloud.uid, TRIP_ID, state, { clientId: CLIENT_ID });
+      setCloudStatus("雲端：同步中 ✅", "ok");
+    }catch(e){
+      console.warn("cloud save failed", e);
+      setCloudStatus("雲端：同步失敗 ❌", "warn");
+    }
+  }
+
+  function cloudSubscribe(){
+    if (!canCloud()) return;
+    if (cloud.unsub) cloud.unsub();
+
+    cloud.unsub = window.CloudSync.subscribe(cloud.uid, TRIP_ID, (remote, meta) => {
+      if (!remote) return;
+
+      // ignore own echo
+      if (meta && meta.clientId && meta.clientId === CLIENT_ID) return;
+
+      const apply = () => {
+        const localStr = JSON.stringify(state);
+        const remoteStr = JSON.stringify(remote);
+        if (localStr === remoteStr) return;
+
+        state = remote;
+        normalizeState();
+        saveLocal();
+        render(true);
+        toast("已同步到雲端變更");
+      };
+
+      // typing -> do not steal focus
+      const ae = document.activeElement;
+      if (isUserTyping || (ae && (ae.tagName==="INPUT" || ae.tagName==="TEXTAREA"))){
+        pendingRemote = { remote, meta };
+        return;
+      }
+      apply();
+    });
+  }
+
+  async function autoLoadFromCloudOnce(){
+    if (!canCloud()) return;
+    if (cloud.autoLoaded) return;
+    cloud.autoLoaded = true;
+
+    await cloudLoad(true);
+    cloudSubscribe();
+  }
+
+  // apply pending remote when user stops typing
+  setInterval(()=>{
+    if (!pendingRemote) return;
+    if (isUserTyping) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName==="INPUT" || ae.tagName==="TEXTAREA")) return;
+
+    const { remote } = pendingRemote;
+    pendingRemote = null;
+
+    state = remote;
+    normalizeState();
+    saveLocal();
+    render(true);
+    toast("已套用雲端更新");
+  }, 600);
+
+  /* =========================
+     Normalize
+  ========================== */
+  function normalizeState(){
+    if (!state) state = defaultState();
+    if (!state.settings) state.settings = defaultState().settings;
+    if (!state.settings.year) state.settings.year = 2026;
+    if (!state.settings.rate) state.settings.rate = 0.22;
+    if (!state.settings.hotelName) state.settings.hotelName = "VESSEL INN 上野入谷站 飯店";
+    if (!state.settings.hotelNameJP) state.settings.hotelNameJP = "ベッセルイン上野入谷駅前";
+    if (!Array.isArray(state.days)) state.days = [];
+    if (!state.appTitle) state.appTitle = "Niji Trip 2026";
+    if (typeof state.appDesc !== "string") state.appDesc = "";
+
+    state.days.forEach((d, idx) => {
+      if (!d.sections){
+        d.sections = { morning:[], afternoon:[], night:[] };
+      }else{
+        if (d.sections.noon && !d.sections.afternoon){
+          d.sections.afternoon = d.sections.noon;
+          delete d.sections.noon;
+        }
+        if (d.sections.transport){
+          d.sections.afternoon = (d.sections.afternoon||[]).concat(d.sections.transport);
+          delete d.sections.transport;
+        }
+        if (d.sections.shopping){
+          d.sections.afternoon = (d.sections.afternoon||[]).concat(d.sections.shopping);
+          delete d.sections.shopping;
+        }
+        if (!d.sections.morning) d.sections.morning = [];
+        if (!d.sections.afternoon) d.sections.afternoon = [];
+        if (!d.sections.night) d.sections.night = [];
+      }
+
+      if (!d.tickets) d.tickets = { text:"", photos:[] };
+      if (!d.dayNote) d.dayNote = { text:"", photos:[] };
+      if (!d.dateText) d.dateText = idx===0 ? "5/8" : "";
+      if (!d.dayLabel) d.dayLabel = `Day ${idx+1}`;
+      if (typeof d.autoDayLabel !== "boolean") d.autoDayLabel = true;
+
+      // Ensure lodging exists
+      const night = d.sections.night;
+      const lodIdx = night.findIndex(c=>c && c.type==="lodging");
+      if (lodIdx < 0){
+        const lod = newCard("lodging");
+        lod.meta = "住宿地點（固定在當日備註上方）";
+        night.push(lod);
+      }
+      // move lodging to end
+      const lodIdx2 = night.findIndex(c=>c && c.type==="lodging");
+      if (lodIdx2 >= 0 && lodIdx2 !== night.length-1){
+        const [lod] = night.splice(lodIdx2,1);
+        night.push(lod);
+      }
+
+      // ensure new card fields
+      ["morning","afternoon","night"].forEach(k=>{
+        (d.sections[k]||[]).forEach(c=>{
+          if (typeof c.routeText !== "string") c.routeText = "";
+          if (!Array.isArray(c.vias)) c.vias = [];
+        });
+      });
+    });
+
+    if (!state.days.length){
+      state.days = [newDay(1), newDay(2), newDay(3)];
+      ensureDatesFromDay1();
+    }else{
+      ensureDatesFromDay1();
+    }
+  }
+
+  /* =========================
+     Save scheduling (NO re-render while typing)
+  ========================== */
+  let saveTimer = null;
+  function scheduleSave(pushCloud=true){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      saveLocal();
+      if (pushCloud) await cloudSave();
+      pushUndo();
+      recalcTotalsUI();
+      setSyncBadge(buildTotalText());
+      toast("已儲存");
+    }, 260);
+  }
+
+  /* =========================
+     Rendering
+  ========================== */
+  function render(){
+    $("#appTitleText").textContent = state.appTitle || "Niji Trip 2026";
+    $("#appDesc").value = state.appDesc || "";
+
+    renderDayNav();
+    renderDays();
+
+    if (!activeDayId && state.days[0]) activeDayId = state.days[0].id;
+    setActiveChip(activeDayId);
+
+    setSyncBadge(buildTotalText());
+    recalcTotalsUI();
+  }
+
+  function renderDayNav(){
+    const nav = $("#dayNav");
+    nav.innerHTML = "";
+    state.days.forEach((d) => {
+      const chip = document.createElement("div");
+      chip.className = "dayChip";
+      chip.dataset.id = d.id;
+      chip.innerHTML = `<div class="t"></div><div class="s"></div>`;
+      chip.querySelector(".t").textContent = d.dayLabel || "Day";
+      chip.querySelector(".s").textContent = d.dateText || "";
+      chip.addEventListener("click", () => {
+        activeDayId = d.id;
+        setActiveChip(d.id);
+        const sec = document.querySelector(\`.daySection[data-id="\${d.id}"]\`);
+        if (sec) sec.scrollIntoView({behavior:"smooth", block:"start"});
+      });
+      nav.appendChild(chip);
+    });
+  }
+
+  function setActiveChip(id){
+    $$(".dayChip").forEach(c=>c.classList.toggle("active", c.dataset.id===id));
+  }
+
+  function dotColor(key){
+    if (key==="morning") return "#ffb85c";
+    if (key==="afternoon") return "#ffd59a";
+    return "#a9e2ff";
+  }
+  function secLabel(key){
+    return key==="morning" ? "☀️ 早上" : key==="afternoon" ? "🌤️ 下午" : "🌙 晚上";
+  }
+
+  function renderDays(){
+    const wrap = $("#daysContainer");
+    wrap.innerHTML = "";
+
+    state.days.forEach((d, idx) => {
+      const sec = document.createElement("section");
+      sec.className = "daySection";
+      sec.dataset.id = d.id;
+
+      sec.innerHTML = `
+        <div class="dayCard">
+          <div class="dayHead">
+            <div class="pill"><input class="dayLabelInp" /></div>
+            <div class="sub"><input class="daySubInp" /></div>
+          </div>
+
+          <div class="meta">
+            <div class="miniPill" title="Day1 日期可改，會自動延伸後續日期">
+              <span>日期</span>
+              <input class="dateInp" inputmode="numeric" placeholder="例如 5/8" />
+            </div>
+
+            <div class="miniPill" title="當天預算（JPY），超過會提醒">
+              <span>預算JPY</span>
+              <input class="budgetInp" inputmode="numeric" placeholder="例如 12000" />
+            </div>
+
+            <div class="miniPill" title="匯率設定（1 JPY = ? TWD）">
+              <span>匯率</span>
+              <input class="rateInp" inputmode="decimal" />
+            </div>
+
+            <span class="badge soft dayTotalBadge">當日合計：0 JPY / 0 TWD</span>
+            <button class="btn small btnDayRoute" type="button">🧭 當天路線總覽</button>
+          </div>
+
+          <div class="tickets">
+            <div class="ticketsHead">
+              <div>🎫 票券 / QR 收納（可貼文字＋加圖片）</div>
+              <button class="btn small btnTicketPhoto" type="button">📷 加圖片</button>
+            </div>
+            <textarea class="ticketText" placeholder="（可放票券/QR/訂位資訊）"></textarea>
+            <div class="photoStrip ticketPhotos"></div>
+          </div>
+
+          <div class="sections">
+            ${renderSectionHTML("morning")}
+            ${renderSectionHTML("afternoon")}
+            ${renderSectionHTML("night")}
+          </div>
+
+          <div class="dayNoteCard">
+            <div class="dayNoteHead">
+              <div>當日備註／花費（固定在最下方）</div>
+              <button class="btn small btnDayNotePhoto" type="button">📷 新增圖片</button>
+            </div>
+            <textarea class="dayNoteText" placeholder="例：餐飲 xxx、交通 xxx、購物 xxx、心得…"></textarea>
+            <div class="photoStrip dayNotePhotos"></div>
+          </div>
+        </div>
+      `;
+
+      // day header binds (no rerender while typing)
+      const dayLabelInp = sec.querySelector(".dayLabelInp");
+      dayLabelInp.value = d.dayLabel || `Day ${idx+1}`;
+      dayLabelInp.addEventListener("input", () => {
+        d.dayLabel = dayLabelInp.value.trim() || `Day ${idx+1}`;
+        d.autoDayLabel = false;
+        const chip = document.querySelector(\`.dayChip[data-id="\${d.id}"] .t\`);
+        if (chip) chip.textContent = d.dayLabel;
+        scheduleSave();
+      });
+
+      const daySubInp = sec.querySelector(".daySubInp");
+      daySubInp.value = d.subtitle || "";
+      daySubInp.addEventListener("input", () => { d.subtitle = daySubInp.value; scheduleSave(); });
+
+      const dateInp = sec.querySelector(".dateInp");
+      dateInp.value = d.dateText || "";
+      dateInp.addEventListener("change", () => {
+        d.dateText = dateInp.value.trim() || d.dateText;
+        if (idx===0){
+          ensureDatesFromDay1();
+          scheduleSave();
+          render();
+        }else{
+          scheduleSave();
+          const chipS = document.querySelector(\`.dayChip[data-id="\${d.id}"] .s\`);
+          if (chipS) chipS.textContent = d.dateText;
+        }
+      });
+
+      const budgetInp = sec.querySelector(".budgetInp");
+      budgetInp.value = d.budgetJPY || "";
+      budgetInp.addEventListener("input", () => { d.budgetJPY = budgetInp.value; scheduleSave(); });
+
+      const rateInp = sec.querySelector(".rateInp");
+      rateInp.value = String(state.settings.rate ?? 0.22);
+      rateInp.addEventListener("input", () => {
+        const v = parseFloat(rateInp.value);
+        if (!isNaN(v) && v>0){
+          state.settings.rate = v;
+          scheduleSave();
+          recalcTotalsUI();
+          setSyncBadge(buildTotalText());
+        }
+      });
+
+      // tickets
+      const ticketText = sec.querySelector(".ticketText");
+      ticketText.value = d.tickets?.text || "";
+      ticketText.addEventListener("input", () => { d.tickets.text = ticketText.value; scheduleSave(); });
+
+      const ticketPhotos = sec.querySelector(".ticketPhotos");
+      renderPhotoStrip(ticketPhotos, d.tickets.photos, () => scheduleSave());
+
+      sec.querySelector(".btnTicketPhoto").addEventListener("click", async () => {
+        const url = await pickPhoto();
+        if (!url) return;
+        d.tickets.photos.push(url);
+        renderPhotoStrip(ticketPhotos, d.tickets.photos, () => scheduleSave());
+        scheduleSave();
+      });
+
+      // day note
+      const dayNoteText = sec.querySelector(".dayNoteText");
+      dayNoteText.value = d.dayNote?.text || "";
+      dayNoteText.addEventListener("input", () => { d.dayNote.text = dayNoteText.value; scheduleSave(); });
+
+      const dayNotePhotos = sec.querySelector(".dayNotePhotos");
+      renderPhotoStrip(dayNotePhotos, d.dayNote.photos, () => scheduleSave());
+
+      sec.querySelector(".btnDayNotePhoto").addEventListener("click", async () => {
+        const url = await pickPhoto();
+        if (!url) return;
+        d.dayNote.photos.push(url);
+        renderPhotoStrip(dayNotePhotos, d.dayNote.photos, () => scheduleSave());
+        scheduleSave();
+      });
+
+      // route overview
+      sec.querySelector(".btnDayRoute").addEventListener("click", () => openDayRoute(d));
+
+      // render cards for each section
+      ["morning","afternoon","night"].forEach(key=>{
+        const body = sec.querySelector(\`.sec[data-sec="\${key}"] .secBody\`);
+        body.innerHTML = "";
+
+        // ensure lodging last in night
+        if (key==="night"){
+          const list = d.sections.night || [];
+          const lodIdx = list.findIndex(c=>c.type==="lodging");
+          if (lodIdx >= 0 && lodIdx !== list.length-1){
+            const [lod] = list.splice(lodIdx,1);
+            list.push(lod);
+          }
+        }
+
+        (d.sections[key]||[]).forEach(card => body.appendChild(renderCard(card, d, key)));
+      });
+
+      // add buttons
+      $$("[data-add]", sec).forEach(btn=>{
+        btn.addEventListener("click", () => {
+          const secKey = btn.dataset.add;
+          const type = btn.dataset.type;
+          addCard(d.id, secKey, type);
+        });
+      });
+
+      wrap.appendChild(sec);
+    });
+  }
+
+  function renderSectionHTML(key){
+    return `
+      <div class="sec" data-sec="${key}">
+        <div class="secHead">
+          <div class="secTitle">
+            <span class="dot" style="background:${dotColor(key)}"></span>
+            <span>${secLabel(key)}</span>
+          </div>
+          <div class="secActions">
+            <button class="btn small" data-add="${key}" data-type="spot" type="button">＋ 景點</button>
+            <button class="btn small" data-add="${key}" data-type="restaurant" type="button">＋ 餐廳</button>
+            <button class="btn small" data-add="${key}" data-type="transport" type="button">＋ 交通</button>
+            <button class="btn small" data-add="${key}" data-type="shopping" type="button">＋ 購物</button>
+          </div>
+        </div>
+        <div class="secBody"></div>
+      </div>
+    `;
+  }
+
+  /* =========================
+     Card rendering (includes marker 1/2/3)
+  ========================== */
+  function renderCard(card, dayObj, secKey){
+    const el = document.createElement("article");
+    el.className = "card";
+    el.dataset.cardId = card.id;
+    el.dataset.dayId = dayObj.id;
+    el.dataset.secKey = secKey;
+
+    if (typeof card.routeText !== "string") card.routeText = "";
+    if (!card.vias) card.vias = [];
+
+    const typeCycle = ["spot","restaurant","transport","shopping","lodging"];
+    const typeName = (t)=> t==="restaurant"?"餐廳":t==="transport"?"交通":t==="shopping"?"購物":t==="lodging"?"住宿":"景點";
+
+    el.innerHTML = `
+      <div class="cardTop">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;">
+          <input class="titleInp" placeholder="標題（例如：東京大神宮）" />
+          <input class="miniInp jaInp" placeholder="日文名稱 / 地址（建議填日文或地址）" />
+          <input class="miniInp metaInp" placeholder="地區・說明（例如：御守、注意事項…）" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <button class="tagBtn" type="button" title="點一下切換類型"></button>
+          ${card.type==="lodging" ? `<span class="badge soft">住宿卡</span>` : ``}
+        </div>
+      </div>
+
+      <div class="cardBtns">
+        <button class="btn small btnPreview" type="button">地圖預覽</button>
+        <button class="btn small btnSearch" type="button">在地圖上搜尋</button>
+        <button class="btn small btnRoute" type="button">一鍵導航路線</button>
+        <button class="btn small btnNearby" type="button">附近搜尋</button>
+      </div>
+
+      <div class="locBox">
+        <div class="locLine">
+          <div class="locLabel">出發</div>
+          <textarea class="taLikeInp originTa" rows="1" placeholder="出發地（可空）"></textarea>
+        </div>
+
+        <div class="locLine">
+          <div class="locLabel">目的</div>
+          <textarea class="taLikeInp destTa" rows="1" placeholder="目的地 / 地址（建議填日文或地址）"></textarea>
+        </div>
+
+        <div class="locLine" style="justify-content:space-between;">
+          <div class="locLabel">途經</div>
+          <div style="flex:1;display:flex;gap:8px;justify-content:flex-end;align-items:center;">
+            <span class="muted" style="font-size:12px;">（可加多個）</span>
+            <button class="btn small btnAddVia" type="button">＋ 途經</button>
+          </div>
+        </div>
+        <div class="vias"></div>
+
+        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <span class="muted" style="font-size:12px;font-weight:1000;">花費 JPY</span>
+          <input class="miniInp jpyInp" inputmode="numeric" placeholder="例如 1200" style="max-width:160px;" />
+          <span class="muted" style="font-size:12px;font-weight:1000;">→ TWD：<span class="twdText">0</span></span>
+        </div>
+      </div>
+
+      <div class="taBox" style="margin-top:10px;">
+        <div class="noteHead" style="margin:0;">
+          <span>交通路線（可貼上/可多行）</span>
+        </div>
+        <div class="noteInner">
+          <textarea class="routeText" placeholder="例：入谷（日比谷線）➡ 秋葉原（日比谷線）/ 轉乘 / ..."></textarea>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="noteHead">
+          <span>備註</span>
+          <button class="btn small btnNotePhoto" type="button">📷</button>
+        </div>
+
+        <div class="noteInner">
+          <textarea class="noteText" placeholder="可寫：排隊、注意事項、順遊、訂位、交通細節…"></textarea>
+          <div class="photoStrip notePhotos" style="margin-top:10px;"></div>
+        </div>
+      </div>
+    `;
+
+    const titleInp = el.querySelector(".titleInp");
+    const jaInp = el.querySelector(".jaInp");
+    const metaInp = el.querySelector(".metaInp");
+    const tagBtn = el.querySelector(".tagBtn");
+
+    const originTa = el.querySelector(".originTa");
+    const destTa = el.querySelector(".destTa");
+    const viasWrap = el.querySelector(".vias");
+
+    const jpyInp = el.querySelector(".jpyInp");
+    const twdText = el.querySelector(".twdText");
+
+    const routeText = el.querySelector(".routeText");
+    const noteText = el.querySelector(".noteText");
+    const notePhotos = el.querySelector(".notePhotos");
+
+    // fill
+    titleInp.value = card.title || "";
+    jaInp.value = card.ja || "";
+    metaInp.value = card.meta || "";
+
+    originTa.value = card.origin || "";
+    destTa.value = (card.destination || card.ja || "") || "";
+    jpyInp.value = card.jpy || "";
+
+    routeText.value = card.routeText || "";
+    noteText.value = card.note || "";
+
+    tagBtn.textContent = typeName(card.type || "spot");
+
+    bindAutoGrow(originTa);
+    bindAutoGrow(destTa);
+    bindAutoGrow(routeText);
+    bindAutoGrow(noteText);
+
+    renderPhotoStrip(notePhotos, card.photos, () => scheduleSave());
+
+    // type toggle (marker 1)
+    tagBtn.addEventListener("click", () => {
+      const cur = card.type || "spot";
+      if (cur === "lodging") return; // lodging fixed
+      const idx = typeCycle.indexOf(cur);
+      const next = typeCycle[(idx + 1 + typeCycle.length) % typeCycle.length];
+      card.type = next;
+      tagBtn.textContent = typeName(next);
+      scheduleSave();
+    });
+
+    // calc
+    function updateTwd(){
+      const rate = Number(state.settings.rate||0.22);
+      const j = parseFloat(card.jpy||"");
+      const t = (!isNaN(j) ? Math.round(j*rate) : 0);
+      card.twd = String(t);
+      twdText.textContent = String(t);
+    }
+    updateTwd();
+
+    // binds
+    titleInp.addEventListener("input", () => { card.title = titleInp.value; scheduleSave(); });
+    jaInp.addEventListener("input", () => {
+      card.ja = jaInp.value;
+      if (!card.destination){
+        card.destination = jaInp.value;
+        destTa.value = card.destination;
+        autoGrow(destTa);
+      }
+      scheduleSave();
+    });
+    metaInp.addEventListener("input", () => { card.meta = metaInp.value; scheduleSave(); });
+
+    originTa.addEventListener("input", () => { card.origin = originTa.value; scheduleSave(); });
+    destTa.addEventListener("input", () => { card.destination = destTa.value; scheduleSave(); });
+
+    jpyInp.addEventListener("input", () => {
+      card.jpy = jpyInp.value;
+      updateTwd();
+      scheduleSave();
+    });
+
+    routeText.addEventListener("input", () => { card.routeText = routeText.value; scheduleSave(); });
+    noteText.addEventListener("input", () => { card.note = noteText.value; scheduleSave(); });
+
+    // vias
+    function renderVias(){
+      viasWrap.innerHTML = "";
+      (card.vias||[]).forEach((v, idx) => {
+        const row = document.createElement("div");
+        row.className = "viaRow";
+        row.innerHTML = `
+          <div class="locLabel">途經${idx+1}</div>
+          <textarea class="taLikeInp viaTa" rows="1" placeholder="途經地點/地址"></textarea>
+          <button class="btn small btnDelVia" type="button">刪</button>
+        `;
+        const ta = row.querySelector(".viaTa");
+        ta.value = v || "";
+        bindAutoGrow(ta);
+        ta.addEventListener("input", () => {
+          card.vias[idx] = ta.value;
+          scheduleSave();
+        });
+        row.querySelector(".btnDelVia").addEventListener("click", () => {
+          card.vias.splice(idx,1);
+          renderVias();
+          scheduleSave();
+        });
+        viasWrap.appendChild(row);
+      });
+    }
+    renderVias();
+
+    el.querySelector(".btnAddVia").addEventListener("click", () => {
+      card.vias = card.vias || [];
+      card.vias.push("");
+      renderVias();
+      scheduleSave();
+    });
+
+    // note photo add (photos stay inside note box)
+    el.querySelector(".btnNotePhoto").addEventListener("click", async () => {
+      const url = await pickPhoto();
+      if (!url) return;
+      card.photos.push(url);
+      renderPhotoStrip(notePhotos, card.photos, () => scheduleSave());
+      scheduleSave();
+    });
+
+    // map actions
+    el.querySelector(".btnPreview").addEventListener("click", () => {
+      const q = (card.destination || card.ja || card.title || "").trim();
+      if (!q) return alert("請先填『目的地/地址』或『日文名稱』");
+      openMapPreview(q);
+    });
+    el.querySelector(".btnSearch").addEventListener("click", () => {
+      const q = (card.destination || card.ja || card.title || "").trim();
+      if (!q) return alert("請先填『目的地/地址』或『日文名稱』");
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, "_blank");
+    });
+    el.querySelector(".btnRoute").addEventListener("click", () => openCardRoute(card));
+    el.querySelector(".btnNearby").addEventListener("click", () => {
+      const q = (card.destination || card.ja || card.title || "").trim();
+      if (!q) return alert("請先填『目的地/地址』或『日文名稱』");
+      openNearbyMenu(q);
+    });
+
+    // long press menu
+    attachLongPress(el);
+
+    return el;
+  }
+
+  function addCard(dayId, secKey, type){
+    const d = state.days.find(x=>x.id===dayId);
+    if (!d) return;
+    if (type==="lodging") return;
+
+    pushUndo();
+    const c = newCard(type);
+
+    if (secKey==="night"){
+      const list = d.sections.night || [];
+      const lodIdx = list.findIndex(x=>x.type==="lodging");
+      if (lodIdx >= 0) list.splice(lodIdx,0,c);
+      else list.push(c);
+    }else{
+      d.sections[secKey].push(c);
+    }
+
+    scheduleSave();
+    render();
+  }
+
+  /* =========================
+     Photos
+  ========================== */
+  const photoPicker = $("#photoPicker");
+  let photoResolve = null;
+
+  function pickPhoto(){
+    return new Promise((resolve) => {
+      photoResolve = resolve;
+      photoPicker.value = "";
+      photoPicker.click();
+    });
+  }
+
+  photoPicker.addEventListener("change", () => {
+    const file = photoPicker.files && photoPicker.files[0];
+    if (!file){
+      if (photoResolve) photoResolve(null);
+      photoResolve = null;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (photoResolve) photoResolve(String(e.target.result || ""));
+      photoResolve = null;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function renderPhotoStrip(container, list, onChanged){
+    container.innerHTML = "";
+    (list||[]).forEach((url, idx) => {
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.src = url;
+      img.alt = "photo";
+      img.title = "點一下直接刪除";
+      img.addEventListener("click", () => {
+        list.splice(idx,1);
+        renderPhotoStrip(container, list, onChanged);
+        onChanged && onChanged();
+      });
+      container.appendChild(img);
+    });
+  }
+
+  /* =========================
+     Modal map
+  ========================== */
+  const modal = $("#mapModal");
+  const modalFrame = $("#modalFrame");
+  $("#btnCloseModal").addEventListener("click", closeModal);
+  modal.addEventListener("click", (e)=>{ if (e.target===modal) closeModal(); });
+
+  function openMapPreview(query){
+    $("#modalTitle").textContent = `地圖預覽：${query}`;
+    modalFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+    modal.classList.add("show");
+    modal.setAttribute("aria-hidden","false");
+  }
+  function closeModal(){
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden","true");
+    modalFrame.src = "about:blank";
+  }
+
+  function openCardRoute(card){
+    const origin = (card.origin||"").trim();
+    const dest = (card.destination || card.ja || card.title || "").trim();
+    if (!dest) return alert("請先填『目的地/地址』");
+    const vias = (card.vias||[]).map(x=>String(x||"").trim()).filter(Boolean);
+
+    const ori = origin || state.settings.hotelNameJP || state.settings.hotelName || "上野";
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(ori)}&destination=${encodeURIComponent(dest)}`;
+    if (vias.length) url += `&waypoints=${encodeURIComponent(vias.join("|"))}`;
+    window.open(url, "_blank");
+  }
+
+  function flattenDayCards(dayObj){
+    return ["morning","afternoon","night"].flatMap(k => (dayObj.sections[k]||[]));
+  }
+
+  function openDayRoute(dayObj){
+    const cards = flattenDayCards(dayObj).filter(c=>c.type!=="lodging");
+    const points = [];
+    cards.forEach(c=>{
+      const q = (c.destination || c.ja || c.title || "").trim();
+      if (q) points.push(q);
+    });
+    if (!points.length) return alert("這天沒有可導航的目的地（請填目的地/地址）");
+
+    const origin = state.settings.hotelNameJP || state.settings.hotelName || "上野";
+    const destination = points[points.length-1];
+    const mids = points.slice(0, points.length-1).slice(0, 9);
+
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+    if (mids.length) url += `&waypoints=${encodeURIComponent(mids.join("|"))}`;
+    window.open(url, "_blank");
+  }
+
+  function openNearbyMenu(baseQuery){
+    const options = [
+      {k:"超商", q:`${baseQuery} 附近 便利商店`},
+      {k:"藥妝", q:`${baseQuery} 附近 藥妝店`},
+      {k:"車站", q:`${baseQuery} 附近 車站`},
+      {k:"廁所", q:`${baseQuery} 附近 トイレ`},
+      {k:"餐廳", q:`${baseQuery} 附近 餐廳`},
+    ];
+    const pick = prompt("附近搜尋：輸入 1-5\n1 超商\n2 藥妝\n3 車站\n4 廁所\n5 餐廳", "2");
+    const n = parseInt(pick||"", 10);
+    if (!n || n<1 || n>5) return;
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(options[n-1].q)}`, "_blank");
+  }
+
+  /* =========================
+     Totals / budget UI
+  ========================== */
+  function buildTotalText(){
+    const rate = Number(state.settings.rate||0.22);
+    let tripJPY = 0;
+
+    state.days.forEach(d=>{
+      flattenDayCards(d).forEach(c=>{
+        const j = parseFloat(c.jpy||"");
+        if (!isNaN(j)) tripJPY += j;
+      });
+    });
+    const tripTWD = Math.round(tripJPY * rate);
+    return `全旅程合計：${Math.round(tripJPY)} JPY / ${tripTWD} TWD（離線可用：已自動保存）`;
+  }
+
+  function recalcTotalsUI(){
+    const rate = Number(state.settings.rate||0.22);
+    state.days.forEach(d=>{
+      let dayJPY = 0;
+      flattenDayCards(d).forEach(c=>{
+        const j = parseFloat(c.jpy||"");
+        if (!isNaN(j)) dayJPY += j;
+        c.twd = (!isNaN(j) ? String(Math.round(j*rate)) : "0");
+      });
+      const dayTWD = Math.round(dayJPY * rate);
+
+      const sec = document.querySelector(`.daySection[data-id="${d.id}"]`);
+      if (sec){
+        const badge = sec.querySelector(".dayTotalBadge");
+        if (badge){
+          badge.textContent = `當日合計：${Math.round(dayJPY)} JPY / ${dayTWD} TWD`;
+          badge.classList.remove("warn");
+          const bud = parseFloat(d.budgetJPY||"");
+          if (!isNaN(bud) && bud>0 && dayJPY>bud){
+            badge.classList.add("warn");
+            badge.textContent += "（超出預算⚠️）";
+          }
+        }
+      }
+    });
+  }
+
+  /* =========================
+     Day add/remove
+  ========================== */
+  function addDay(){
+    pushUndo();
+    const i = state.days.length + 1;
+    const d = newDay(i);
+    state.days.push(d);
+    ensureDatesFromDay1();
+    scheduleSave();
+    render();
+  }
+
+  function removeLastDay(){
+    if (state.days.length <= 1) return alert("至少要保留一天");
+    pushUndo();
+    state.days.pop();
+    ensureDatesFromDay1();
+    scheduleSave();
+    render();
+  }
+
+  /* =========================
+     Import / Export
+  ========================== */
+  $("#btnExport").addEventListener("click", () => {
+    const data = { savedAt: new Date().toISOString(), state };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "NijiTrip2026_backup.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  $("#btnImport").addEventListener("click", () => $("#importFile").click());
+  $("#importFile").addEventListener("change", () => {
+    const file = $("#importFile").files && $("#importFile").files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try{
+        const data = JSON.parse(String(e.target.result||"{}"));
+        if (data && data.state){
+          pushUndo();
+          state = data.state;
+          normalizeState();
+          saveLocal();
+          scheduleSave();
+          render();
+          toast("匯入成功");
+        }else{
+          alert("匯入失敗：JSON 格式不對");
+        }
+      }catch(err){
+        alert("匯入失敗：JSON 解析錯誤");
+      }
+    };
+    reader.readAsText(file, "utf-8");
+    $("#importFile").value = "";
+  });
+
+  $("#btnClear").addEventListener("click", () => {
+    if (!confirm("確定清除本機所有資料？（不可復原）")) return;
+    clearLocal();
+    undoStack = [];
+    state = defaultState();
+    normalizeState();
+    saveLocal();
+    pushUndo();
+    render();
+    toast("已清除");
+  });
+
+  /* =========================
+     Cloud buttons
+  ========================== */
+  $("#btnCloudPull").addEventListener("click", async () => {
+    if (!canCloud()) return alert("請先登入，才能從雲端載入。");
+    if (!confirm("確定要用『雲端資料』覆蓋目前畫面？（本機未同步的內容會被覆蓋）")) return;
+    await cloudLoad(true);
+    cloudSubscribe();
+  });
+
+  $("#btnCloudPush").addEventListener("click", async () => {
+    if (!canCloud()) return alert("請先登入，才能推送到雲端。");
+    if (!confirm("確定要把『本機資料』推到雲端？（會覆蓋雲端同一份行程）")) return;
+    await cloudSave();
+    toast("已推送到雲端");
+  });
+
+  /* =========================
+     Undo
+  ========================== */
+  $("#btnUndo").addEventListener("click", () => {
+    if (undoStack.length <= 1) return;
+    undoStack.pop();
+    const prev = undoStack[undoStack.length-1];
+    if (!prev) return;
+    try{
+      state = JSON.parse(prev);
+      normalizeState();
+      saveLocal();
+      render();
+      $("#btnUndo").disabled = undoStack.length <= 1;
+      toast("已 Undo");
+    }catch(e){}
+  });
+
+  /* =========================
+     Jump to active day
+  ========================== */
+  $("#btnJumpActive").addEventListener("click", () => {
+    if (!activeDayId) return;
+    const sec = document.querySelector(`.daySection[data-id="${activeDayId}"]`);
+    if (sec) sec.scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  /* =========================
+     Search
+  ========================== */
+  function doSearch(){
+    const q = $("#searchInput").value.trim();
+    if (!q){
+      $("#searchResult").textContent = "請輸入關鍵字";
+      return;
+    }
+    const hits = [];
+    state.days.forEach(d=>{
+      if ((d.tickets?.text||"").includes(q)) hits.push({day:d, where:"票券文字"});
+      if ((d.dayNote?.text||"").includes(q)) hits.push({day:d, where:"當日備註"});
+      flattenDayCards(d).forEach(c=>{
+        const blob = `${c.title||""} ${c.ja||""} ${c.meta||""} ${c.note||""} ${c.origin||""} ${c.destination||""} ${(c.vias||[]).join(" ")} ${c.routeText||""}`;
+        if (blob.includes(q)) hits.push({day:d, card:c, where:"行程卡"});
+      });
+    });
+
+    $("#searchResult").textContent = hits.length ? `找到 ${hits.length} 筆` : "找不到";
+    if (!hits.length) return;
+
+    const first = hits[0];
+    activeDayId = first.day.id;
+    setActiveChip(activeDayId);
+    const sec = document.querySelector(`.daySection[data-id="${first.day.id}"]`);
+    if (sec) sec.scrollIntoView({behavior:"smooth", block:"start"});
+  }
+  $("#btnSearch").addEventListener("click", doSearch);
+  $("#searchInput").addEventListener("keydown", (e) => {
+    if (e.key==="Enter"){
+      e.preventDefault();
+      doSearch();
+    }
+  });
+
+  /* =========================
+     App desc
+  ========================== */
+  $("#appDesc").addEventListener("input", () => {
+    state.appDesc = $("#appDesc").value;
+    scheduleSave();
+  });
+
+  /* =========================
+     Buttons add/remove day
+  ========================== */
+  $("#btnAddDay").addEventListener("click", addDay);
+  $("#btnRemoveDay").addEventListener("click", removeLastDay);
+
+  /* =========================
+     Long press menu (Delete/Copy/Pin/Move/Up/Down)
+  ========================== */
+  const menu = $("#ctxMenu");
+  let menuCtx = null; // {dayId, secKey, cardId}
+  let pressTimer = null;
+  let pressStart = null;
+
+  function attachLongPress(cardEl){
+    const onDown = (e) => {
+      if (e.type==="mousedown" && e.button !== 0) return;
+      pressStart = { x: e.clientX, y: e.clientY };
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => openMenu(cardEl, e.clientX, e.clientY), 520);
+    };
+    const onMove = (e) => {
+      if (!pressStart) return;
+      const dx = Math.abs(e.clientX - pressStart.x);
+      const dy = Math.abs(e.clientY - pressStart.y);
+      if (dx > 12 || dy > 12) clearTimeout(pressTimer);
+    };
+    const onUp = () => { clearTimeout(pressTimer); pressStart = null; };
+
+    cardEl.addEventListener("touchstart", (e) => {
+      const t = e.touches[0];
+      onDown({type:"touchstart", clientX:t.clientX, clientY:t.clientY});
+    }, {passive:true});
+    cardEl.addEventListener("touchmove", (e) => {
+      const t = e.touches[0];
+      onMove({clientX:t.clientX, clientY:t.clientY});
+    }, {passive:true});
+    cardEl.addEventListener("touchend", onUp);
+
+    cardEl.addEventListener("mousedown", onDown);
+    cardEl.addEventListener("mousemove", onMove);
+    cardEl.addEventListener("mouseup", onUp);
+    cardEl.addEventListener("mouseleave", onUp);
+  }
+
+  function openMenu(cardEl, x, y){
+    const dayId = cardEl.dataset.dayId;
+    const secKey = cardEl.dataset.secKey;
+    const cardId = cardEl.dataset.cardId;
+
+    menuCtx = {dayId, secKey, cardId};
+    const found = findCard(dayId, secKey, cardId);
+    $("#ctxTitle").textContent = found?.card?.title ? `卡片：${(found.card.title||"").slice(0, 28)}` : "卡片操作";
+
+    menu.style.left = Math.min(x, window.innerWidth - 240) + "px";
+    menu.style.top  = Math.min(y, window.innerHeight - 280) + "px";
+    menu.classList.add("show");
+  }
+  function closeMenu(){
+    menu.classList.remove("show");
+    menuCtx = null;
+  }
+  document.addEventListener("click", (e) => {
+    if (menu.classList.contains("show") && !menu.contains(e.target)) closeMenu();
+  });
+
+  function findCard(dayId, secKey, cardId){
+    const d = state.days.find(x=>x.id===dayId);
+    if (!d) return null;
+    const list = d.sections[secKey]||[];
+    const idx = list.findIndex(c=>c.id===cardId);
+    if (idx<0) return null;
+    return {d, list, idx, card:list[idx]};
+  }
+
+  $("#mUp").addEventListener("click", () => {
+    if (!menuCtx) return;
+    const found = findCard(menuCtx.dayId, menuCtx.secKey, menuCtx.cardId);
+    if (!found) return closeMenu();
+    const {list, idx, card} = found;
+    if (card.type==="lodging") return alert("住宿卡固定在底部");
+    if (idx<=0) return closeMenu();
+    pushUndo();
+    list.splice(idx,1);
+    list.splice(idx-1,0,card);
+    scheduleSave();
+    render();
+    closeMenu();
+  });
+
+  $("#mDown").addEventListener("click", () => {
+    if (!menuCtx) return;
+    const found = findCard(menuCtx.dayId, menuCtx.secKey, menuCtx.cardId);
+    if (!found) return closeMenu();
+    const {list, idx, card} = found;
+    if (card.type==="lodging") return alert("住宿卡固定在底部");
+    if (idx>=list.length-1) return closeMenu();
+    pushUndo();
+    list.splice(idx,1);
+    list.splice(idx+1,0,card);
+    scheduleSave();
+    render();
+    closeMenu();
+  });
+
+  $("#mDelete").addEventListener("click", () => {
+    if (!menuCtx) return;
+    const found = findCard(menuCtx.dayId, menuCtx.secKey, menuCtx.cardId);
+    if (!found) return closeMenu();
+    const {list, idx, card} = found;
+    if (card.type==="lodging") return alert("住宿卡固定（不能刪除）");
+    pushUndo();
+    list.splice(idx,1);
+    scheduleSave();
+    render();
+    closeMenu();
+  });
+
+  $("#mCopy").addEventListener("click", () => {
+    if (!menuCtx) return;
+    const found = findCard(menuCtx.dayId, menuCtx.secKey, menuCtx.cardId);
+    if (!found) return closeMenu();
+    const {list, idx, card} = found;
+    if (card.type==="lodging") return alert("住宿卡固定（不支援複製）");
+    pushUndo();
+    const clone = JSON.parse(JSON.stringify(card));
+    clone.id = `c_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    list.splice(idx+1,0,clone);
+    scheduleSave();
+    render();
+    closeMenu();
+  });
+
+  $("#mPin").addEventListener("click", () => {
+    if (!menuCtx) return;
+    const found = findCard(menuCtx.dayId, menuCtx.secKey, menuCtx.cardId);
+    if (!found) return closeMenu();
+    const {list, idx, card} = found;
+    if (card.type==="lodging") return alert("住宿卡已固定在底部");
+    pushUndo();
+    list.splice(idx,1);
+    list.unshift(card);
+    scheduleSave();
+    render();
+    closeMenu();
+  });
+
+  $("#mMove").addEventListener("click", () => {
+    if (!menuCtx) return;
+    const found = findCard(menuCtx.dayId, menuCtx.secKey, menuCtx.cardId);
+    if (!found) return closeMenu();
+    const {list, idx, card} = found;
+    if (card.type==="lodging") return alert("住宿卡固定（不能移動）");
+
+    const labels = state.days.map((dd,i)=> `${i+1}. ${dd.dayLabel} (${dd.dateText})`).join("\n");
+    const pick = prompt("移到哪一天？輸入序號：\n" + labels, "2");
+    const n = parseInt(pick||"", 10);
+    if (!n || n<1 || n>state.days.length) return closeMenu();
+    const toDay = state.days[n-1];
+
+    const secPick = prompt("移到哪個分區？輸入：morning / afternoon / night", "morning");
+    const targetSec = ["morning","afternoon","night"].includes(secPick) ? secPick : "morning";
+
+    pushUndo();
+    list.splice(idx,1);
+    toDay.sections[targetSec] = toDay.sections[targetSec] || [];
+    if (targetSec==="night"){
+      const lodIdx = toDay.sections.night.findIndex(x=>x.type==="lodging");
+      if (lodIdx>=0) toDay.sections.night.splice(lodIdx,0,card);
+      else toDay.sections.night.push(card);
+    }else{
+      toDay.sections[targetSec].push(card);
+    }
+    scheduleSave();
+    render();
+    closeMenu();
+  });
+
+  /* =========================
+     Init
+  ========================== */
+  function init(){
+    const s = loadLocal();
+    state = s || defaultState();
+    normalizeState();
+
+    undoStack = [];
+    pushUndo();
+    $("#btnUndo").disabled = true;
+
+    render();
+  }
+  init();
+
+  /* =========================
+     Wire auth hooks from module
+  ========================== */
+  window.NijiApp = {
+    onAuthState(user){
+      cloud.user = user || null;
+      cloud.uid = user ? user.uid : null;
+      cloud.autoLoaded = false;
+
+      if (user){
+        setAuthStatus(`已登入：${user.email || "(unknown)"}`);
+        $("#btnSignOut").disabled = false;
+
+        $("#btnCloudPull").disabled = false;
+        $("#btnCloudPush").disabled = false;
+
+        setCloudStatus("雲端：準備中…", "soft");
+        autoLoadFromCloudOnce().then(()=>{
+          setCloudStatus("雲端：已連線 ✅", "ok");
+        });
+      }else{
+        setAuthStatus("尚未登入（可離線使用）");
+        $("#btnSignOut").disabled = true;
+
+        $("#btnCloudPull").disabled = true;
+        $("#btnCloudPush").disabled = true;
+
+        if (cloud.unsub){ cloud.unsub(); cloud.unsub = null; }
+        setCloudStatus("雲端：未連線", "soft");
+      }
+    }
+  };
+})();
+</script>
+
+<script type="module">
+  // ====== Firebase Auth + Firestore CloudSync (Email/Password) ======
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged,
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAkFpjZVwRDA92YLK-JfDPeoHJ3hbgKVXM",
+    authDomain: "trip-db86d.firebaseapp.com",
+    projectId: "trip-db86d",
+    storageBucket: "trip-db86d.firebasestorage.app",
+    messagingSenderId: "709795426974",
+    appId: "1:709795426974:web:ec3e2f03f2116b68c1418f",
+    measurementId: "G-FD0411E3XH"
+  };
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // CloudSync API: users/{uid}/trips/{tripId}
+  window.CloudSync = {
+    _ref(uid, tripId){
+      return doc(db, "users", uid, "trips", tripId);
+    },
+    async load(uid, tripId){
+      const ref = this._ref(uid, tripId);
+      const snap = await getDoc(ref);
+      return snap.exists() ? (snap.data()?.state ?? null) : null;
+    },
+    async save(uid, tripId, state, meta={}){
+      const ref = this._ref(uid, tripId);
+      await setDoc(ref, {
+        state,
+        updatedAt: serverTimestamp(),
+        meta: { ...(meta||{}), updatedAtMs: Date.now() }
+      }, { merge: true });
+    },
+    subscribe(uid, tripId, onState){
+      const ref = this._ref(uid, tripId);
+      return onSnapshot(ref, (snap) => {
+        if (!snap.exists()) return;
+        const remote = snap.data()?.state ?? null;
+        const meta = snap.data()?.meta ?? null;
+        if (remote) onState(remote, meta);
+      });
+    }
+  };
+
+  // --- UI wiring ---
+  const $ = (s)=>document.querySelector(s);
+  const email = $("#email");
+  const pw = $("#password");
+
+  $("#btnEmailSignUp").addEventListener("click", async () => {
+    try{
+      if (!email.value || !pw.value) return alert("請輸入 Email 與 Password");
+      await createUserWithEmailAndPassword(auth, email.value.trim(), pw.value);
+      alert("註冊成功 ✅");
+    }catch(e){
+      console.error(e);
+      alert("註冊失敗：" + (e?.message || e));
+    }
+  });
+
+  $("#btnEmailSignIn").addEventListener("click", async () => {
+    try{
+      if (!email.value || !pw.value) return alert("請輸入 Email 與 Password");
+      await signInWithEmailAndPassword(auth, email.value.trim(), pw.value);
+    }catch(e){
+      console.error(e);
+      alert("登入失敗：" + (e?.message || e));
+    }
+  });
+
+  $("#btnSignOut").addEventListener("click", async () => {
+    try{ await signOut(auth); }
+    catch(e){ console.error(e); alert("登出失敗：" + (e?.message || e)); }
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (window.NijiApp && typeof window.NijiApp.onAuthState === "function"){
+      window.NijiApp.onAuthState(user);
+    }
+  });
+
+  console.log("[Firebase] ready");
+</script>
+
 </body>
 </html>
